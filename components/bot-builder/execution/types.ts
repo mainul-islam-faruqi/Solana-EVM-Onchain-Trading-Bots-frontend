@@ -28,14 +28,18 @@ export type ExecutionState = {
   errors: ExecutionError[];
 }
 
+export type ActionType = 'buy' | 'sell' | 'trigger' | 'condition';
+
 export type ExecutedAction = {
   blockId: string;
   timestamp: number;
-  type: 'buy' | 'sell';
+  type: ActionType;
   amount: number;
   price: number;
   status: 'pending' | 'completed' | 'failed';
   txHash?: string;
+  pair?: string;
+  errorMessage?: string;
 }
 
 export type ExecutionError = {

@@ -13,6 +13,7 @@ import { ExecutionPanel } from './execution/execution-panel'
 import { AlertCircle } from 'lucide-react'
 import { AVAILABLE_BLOCKS, createBlock } from './block-registry'
 
+
 export function BotBuilder() {
   const [strategy, setStrategy] = React.useState<BotStrategy>({
     id: crypto.randomUUID(),
@@ -36,6 +37,8 @@ export function BotBuilder() {
 
   const [validationErrors, setValidationErrors] = React.useState<ValidationError[]>([])
   const validationService = React.useMemo(() => new ValidationService(), [])
+
+
 
   const validateStrategy = React.useCallback(() => {
     const result = validationService.validateStrategy(strategy)
@@ -151,49 +154,41 @@ export function BotBuilder() {
         block.id === blockId ? { ...block, config: newConfig } : block
       )
     }))
+
+    if (selectedBlock?.id === blockId) {
+      setSelectedBlock(prev => prev ? { ...prev, config: newConfig } : null)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#3A0CA3] to-[#7209B7] text-white">
-      <div className="container mx-auto p-6">
-        <div className="max-w-[1600px] mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#4CC9F0] to-[#F72585]">
-                Bot Builder
-              </h1>
-              <p className="text-sm text-[#4CC9F0]/80 mt-1">
-                Create your trading strategy by dragging blocks onto the canvas
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-12 gap-6">
-            {/* Left Sidebar */}
-            <div className="col-span-3 space-y-6">
-              <BlockLibrary 
+    <div className="min-h-screen bg-gradient-to-b from-darkest to-dark">
+      <div className="container mx-auto px-4 py-12">
+        <div className="space-y-6">
+          {/* Strategy Builder Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Block Library */}
+            <div className="lg:col-span-1">
+              <BlockLibrary
                 blocks={availableBlocks}
                 onDragStart={handleDragStart}
               />
             </div>
 
-            {/* Main Content */}
-            <div className="col-span-9 space-y-6">
-              {/* Canvas */}
+            {/* Canvas */}
+            <div className="lg:col-span-3">
               <Card 
-                className="relative min-h-[600px] border border-[#4895EF]/20 bg-[#1A1B41]/50 backdrop-blur-sm"
+                className="border border-accent/20 bg-darker/50 backdrop-blur-sm"
                 onDrop={handleBlockDrop}
                 onDragOver={handleDragOver}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => setPreviewConnection(null)}
               >
-                <CardHeader className="border-b border-[#4895EF]/20">
-                  <CardTitle className="text-lg font-medium text-[#4CC9F0]">Strategy Canvas</CardTitle>
+                <CardHeader className="border-b border-accent/20">
+                  <CardTitle className="text-lg font-medium text-lightest">Strategy Canvas</CardTitle>
                 </CardHeader>
                 <CardContent className="relative p-0 min-h-[600px] bg-[url('/grid.svg')] bg-center">
                   {/* Grid overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#1A1B41]/5 via-[#1A1B41]/10 to-[#1A1B41]/20" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-darker/5 via-darker/10 to-darker/20" />
 
                   {/* Connections */}
                   <svg className="absolute inset-0 pointer-events-none">
@@ -247,7 +242,7 @@ export function BotBuilder() {
                           onPositionChange={(newPosition) => 
                             handleBlockPositionChange(block.id, newPosition)
                           }
-                          onConfigChange={(newConfig) => handleBlockConfigChange(block.id, newConfig)}
+                          onConfigChange={handleConfigChange}
                         />
                       </div>
                     )
@@ -255,12 +250,12 @@ export function BotBuilder() {
 
                   {/* Empty state */}
                   {strategy.blocks.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <div className="absolute inset-0 flex items-center justify-center text-lightest">
                       <div className="text-center">
-                        <div className="inline-block p-3 rounded-full bg-muted/50 mb-4">
-                          <AlertCircle className="w-6 h-6" />
+                        <div className="inline-block p-3 rounded-full bg-darker/50 mb-4">
+                          <AlertCircle className="w-6 h-6 text-light" />
                         </div>
-                        <p className="text-sm">Drag blocks from the library to start building your strategy</p>
+                        <p className="text-sm text-light">Drag blocks from the library to start building your strategy</p>
                       </div>
                     </div>
                   )}
@@ -269,12 +264,12 @@ export function BotBuilder() {
 
               {/* Validation Errors */}
               {validationErrors.length > 0 && (
-                <div className="rounded-lg border border-[#F72585]/50 bg-[#F72585]/10 p-4">
-                  <div className="flex items-center space-x-2 text-[#F72585] mb-2">
+                <div className="mt-4 rounded-lg border border-error/50 bg-error/10 p-4">
+                  <div className="flex items-center space-x-2 text-error mb-2">
                     <AlertCircle className="h-4 w-4" />
-                    <h4 className="font-medium">Validation Errors</h4>
+                    <h4 className="font-medium text-lightest">Validation Errors</h4>
                   </div>
-                  <ul className="space-y-1 text-sm text-[#F72585]">
+                  <ul className="space-y-1 text-sm text-light">
                     {validationErrors.map((error, index) => (
                       <li key={index}>{error.message}</li>
                     ))}
@@ -283,7 +278,7 @@ export function BotBuilder() {
               )}
 
               {/* Configuration and Execution */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-6 mt-6">
                 <div className="col-span-1">
                   {selectedBlock ? (
                     <BlockConfigPanel
@@ -291,8 +286,8 @@ export function BotBuilder() {
                       onConfigChange={handleConfigChange}
                     />
                   ) : (
-                    <Card className="border-[#4895EF]/20 bg-[#1A1B41]/50 backdrop-blur-sm h-full">
-                      <CardContent className="flex items-center justify-center min-h-[300px] text-[#4CC9F0]/60">
+                    <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm h-full">
+                      <CardContent className="flex items-center justify-center min-h-[300px] text-lightest">
                         <p className="text-sm">Select a block to configure</p>
                       </CardContent>
                     </Card>

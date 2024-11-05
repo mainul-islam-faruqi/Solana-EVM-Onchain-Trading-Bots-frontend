@@ -237,6 +237,95 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
     },
     maxInputs: 1,
     maxOutputs: 1
+  },
+  {
+    id: 'market-sell',
+    type: 'action',
+    category: 'trade',
+    label: 'Market Sell',
+    description: 'Execute a market sell order',
+    chainType: 'both',
+    config: {
+      type: 'market',
+      side: 'sell',
+      amount: 0,
+      slippage: 1
+    },
+    defaultConfig: {
+      type: 'market',
+      side: 'sell',
+      amount: 0,
+      slippage: 1
+    },
+    validationRules: {
+      amount: { min: 0, required: true },
+      slippage: { min: 0, max: 100 }
+    },
+    allowedConnections: {
+      inputs: ['trigger', 'condition']
+    },
+    maxInputs: 1
+  },
+  {
+    id: 'limit-sell',
+    type: 'action',
+    category: 'trade',
+    label: 'Limit Sell',
+    description: 'Place a limit sell order',
+    chainType: 'both',
+    config: {
+      type: 'limit',
+      side: 'sell',
+      amount: 0,
+      limitPrice: 0,
+      expiry: '24h'
+    },
+    defaultConfig: {
+      type: 'limit',
+      side: 'sell',
+      amount: 0,
+      limitPrice: 0,
+      expiry: '24h'
+    },
+    validationRules: {
+      amount: { min: 0, required: true },
+      limitPrice: { min: 0, required: true }
+    },
+    allowedConnections: {
+      inputs: ['trigger', 'condition']
+    },
+    maxInputs: 1
+  },
+  {
+    id: 'take-profit',
+    type: 'action',
+    category: 'trade',
+    label: 'Take Profit',
+    description: 'Place a take-profit sell order',
+    chainType: 'both',
+    config: {
+      type: 'limit',
+      side: 'sell',
+      amount: 0,
+      targetPrice: 0,
+      trailingPercent: 0
+    },
+    defaultConfig: {
+      type: 'limit',
+      side: 'sell',
+      amount: 0,
+      targetPrice: 0,
+      trailingPercent: 0
+    },
+    validationRules: {
+      amount: { min: 0, required: true },
+      targetPrice: { min: 0, required: true },
+      trailingPercent: { min: 0, max: 100 }
+    },
+    allowedConnections: {
+      inputs: ['trigger', 'condition']
+    },
+    maxInputs: 1
   }
 ]
 

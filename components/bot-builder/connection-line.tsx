@@ -32,7 +32,7 @@ export function ConnectionLine({ start, end, isPreview = false }: ConnectionLine
       {/* Shadow effect */}
       <path
         d={pathD}
-        stroke="#4895EF"
+        stroke="#7B2CBF"
         strokeWidth={4}
         fill="none"
         filter="blur(4px)"
@@ -42,7 +42,7 @@ export function ConnectionLine({ start, end, isPreview = false }: ConnectionLine
       {/* Main line */}
       <path
         d={pathD}
-        stroke={isPreview ? '#4CC9F0' : '#4CC9F0'}
+        stroke={isPreview ? '#9D4EDD' : '#9D4EDD'}
         strokeWidth={2}
         fill="none"
         opacity={isPreview ? 0.5 : 1}
@@ -65,7 +65,7 @@ export function ConnectionLine({ start, end, isPreview = false }: ConnectionLine
         >
           <polygon
             points="0 0, 10 3.5, 0 7"
-            fill={isPreview ? '#4CC9F0' : '#4CC9F0'}
+            fill={isPreview ? '#9D4EDD' : '#9D4EDD'}
             opacity={isPreview ? 0.5 : 1}
           />
         </marker>

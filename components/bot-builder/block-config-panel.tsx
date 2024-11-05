@@ -106,15 +106,15 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
 
   if (!selectedBlock) {
     return (
-      <Card className="border border-[#4895EF]/20 bg-[#1A1B41]/50 backdrop-blur-sm h-full">
-        <CardHeader className="border-b border-[#4895EF]/20">
-          <CardTitle className="flex items-center space-x-2 text-[#4CC9F0]">
+      <Card className="border border-accent/20 bg-darker/50 backdrop-blur-sm h-full">
+        <CardHeader className="border-b border-accent/20">
+          <CardTitle className="flex items-center space-x-2 text-lightest">
             <Settings className="h-5 w-5" />
             <span>Block Configuration</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 flex items-center justify-center">
-          <div className="text-center text-[#4CC9F0]/60">
+          <div className="text-center text-light">
             <AlertCircle className="h-8 w-8 mx-auto mb-2" />
             <p>Select a block to configure</p>
           </div>
@@ -124,11 +124,11 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
   }
 
   return (
-    <Card className="border border-[#4895EF]/20 bg-[#1A1B41]/50 backdrop-blur-sm">
-      <CardHeader className="border-b border-[#4895EF]/20">
-        <CardTitle className="flex items-center space-x-2 text-[#4CC9F0]">
+    <Card className="border border-accent/20 bg-darker/50 backdrop-blur-sm">
+      <CardHeader className="border-b border-accent/20">
+        <CardTitle className="flex items-center space-x-2 text-lightest">
           <Settings className="h-5 w-5" />
-          <span>Configure {selectedBlock.label}</span>
+          <span>Configure {selectedBlock?.label}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 space-y-6">
@@ -136,12 +136,12 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
           <div key={key} className="space-y-2">
             <Label 
               htmlFor={key} 
-              className="text-sm font-medium flex items-center justify-between text-[#4CC9F0]"
+              className="text-sm font-medium flex items-center justify-between text-light"
             >
               {key.charAt(0).toUpperCase() + key.slice(1)}
               <InfoTooltip 
-                text={`Configure ${key} for ${selectedBlock.label}`}
-                className="text-[#4CC9F0]/60 cursor-help"
+                text={`Configure ${key} for ${selectedBlock?.label}`}
+                className="text-light/60 cursor-help"
               />
             </Label>
             {typeof value === 'number' ? (
@@ -152,12 +152,14 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                 onChange={(e) => handleConfigChange(key, parseFloat(e.target.value) || 0)}
                 onBlur={() => handleInputBlur(key)}
                 className={cn(
-                  "bg-[#1A1B41]/80 border-[#4895EF]/20 text-[#4CC9F0]",
-                  getFieldError(key) && touched.has(key) ? 'border-[#F72585]' : ''
+                  "bg-darker border-accent/20 text-lightest placeholder-light/50",
+                  "focus:border-accent focus:ring-1 focus:ring-accent",
+                  "hover:border-accent/40",
+                  getFieldError(key) && touched.has(key) ? 'border-error' : ''
                 )}
                 step="0.000001"
-                min={selectedBlock.validationRules?.[key]?.min ?? 0}
-                max={selectedBlock.validationRules?.[key]?.max}
+                min={selectedBlock?.validationRules?.[key]?.min ?? 0}
+                max={selectedBlock?.validationRules?.[key]?.max}
                 placeholder={`Enter ${key}...`}
               />
             ) : typeof value === 'string' && key === 'condition' ? (
@@ -165,13 +167,19 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                 value={value}
                 onValueChange={(v) => handleConfigChange(key, v)}
               >
-                <SelectTrigger className="bg-[#1A1B41]/80 border-[#4895EF]/20 text-[#4CC9F0]">
+                <SelectTrigger 
+                  className={cn(
+                    "bg-darker border-accent/20 text-lightest",
+                    "focus:border-accent focus:ring-1 focus:ring-accent",
+                    "hover:border-accent/40"
+                  )}
+                >
                   <SelectValue placeholder={`Select ${key}`} />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1B41] border-[#4895EF]/20">
-                  <SelectItem value="above">Above</SelectItem>
-                  <SelectItem value="below">Below</SelectItem>
-                  <SelectItem value="equals">Equals</SelectItem>
+                <SelectContent className="bg-darker border-accent/20">
+                  <SelectItem value="above" className="text-lightest hover:bg-accent/10">Above</SelectItem>
+                  <SelectItem value="below" className="text-lightest hover:bg-accent/10">Below</SelectItem>
+                  <SelectItem value="equals" className="text-lightest hover:bg-accent/10">Equals</SelectItem>
                 </SelectContent>
               </Select>
             ) : typeof value === 'string' ? (
@@ -182,26 +190,28 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                 onChange={(e) => handleConfigChange(key, e.target.value)}
                 onBlur={() => handleInputBlur(key)}
                 className={cn(
-                  "bg-[#1A1B41]/80 border-[#4895EF]/20 text-[#4CC9F0]",
-                  getFieldError(key) && touched.has(key) ? 'border-[#F72585]' : ''
+                  "bg-darker border-accent/20 text-lightest placeholder-light/50",
+                  "focus:border-accent focus:ring-1 focus:ring-accent",
+                  "hover:border-accent/40",
+                  getFieldError(key) && touched.has(key) ? 'border-error' : ''
                 )}
                 placeholder={`Enter ${key}...`}
               />
             ) : null}
             {getFieldError(key) && touched.has(key) && (
-              <p className="text-xs text-[#F72585] mt-1">{getFieldError(key)}</p>
+              <p className="text-xs text-error mt-1">{getFieldError(key)}</p>
             )}
           </div>
         ))}
 
         {/* Configuration Summary */}
-        <div className="mt-6 p-3 bg-[#1A1B41]/80 rounded-lg border border-[#4895EF]/10">
-          <h4 className="text-sm font-medium mb-2 text-[#4CC9F0]">Configuration Summary</h4>
+        <div className="mt-6 p-3 bg-darker/80 rounded-lg border border-accent/10">
+          <h4 className="text-sm font-medium mb-2 text-lightest">Configuration Summary</h4>
           <div className="space-y-1 text-sm">
             {Object.entries(localConfig).map(([key, value]) => (
               <div key={key} className="flex justify-between">
-                <span className="capitalize text-[#4CC9F0]/60">{key}:</span>
-                <span className="font-medium text-[#4CC9F0]">{value.toString()}</span>
+                <span className="capitalize text-light">{key}:</span>
+                <span className="font-medium text-lightest">{value.toString()}</span>
               </div>
             ))}
           </div>

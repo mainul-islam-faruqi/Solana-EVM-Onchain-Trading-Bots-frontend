@@ -5,7 +5,11 @@ import {
   MarketData 
 } from './types'
 import { BlockType, BotStrategy } from '../types'
-import { PriceTriggerExecutor, MarketBuyExecutor, MarketSellExecutor } from './block-executors'
+import { 
+  PriceTriggerExecutor,
+  MarketOrderExecutor,
+  LimitOrderExecutor
+} from './block-executors'
 
 export class ExecutionEngine {
   private executors: Map<string, BlockExecutor>
@@ -37,8 +41,18 @@ export class ExecutionEngine {
   private registerExecutors() {
     // Register different types of block executors
     this.executors.set('price-trigger', new PriceTriggerExecutor())
-    this.executors.set('market-buy', new MarketBuyExecutor())
-    this.executors.set('market-sell', new MarketSellExecutor())
+    
+    // Use MarketOrderExecutor for both buy and sell
+    const marketExecutor = new MarketOrderExecutor()
+    this.executors.set('market-buy', marketExecutor)
+    this.executors.set('market-sell', marketExecutor)
+    
+    // Use LimitOrderExecutor for limit orders
+    const limitExecutor = new LimitOrderExecutor()
+    this.executors.set('limit-buy', limitExecutor)
+    this.executors.set('limit-sell', limitExecutor)
+    this.executors.set('take-profit', limitExecutor)
+    this.executors.set('stop-loss', limitExecutor)
   }
 
   private async updateMarketData(): Promise<void> {
