@@ -21,32 +21,51 @@ export type WalletBalance = {
   }
 }
 
-export type ExecutionState = {
-  status: 'idle' | 'running' | 'paused' | 'error';
-  lastExecutionTime?: number;
-  executedActions: ExecutedAction[];
-  errors: ExecutionError[];
+export type ExecutionStatus = 'idle' | 'running' | 'paused' | 'error';
+
+export interface ExecutionMetrics {
+  profitLoss: number;
+  totalTrades: number;
+  successRate: number;
+  lastTradeTime: number | null;
+  gasUsed: number;
+  avgExecutionTime?: number;
+  failedTrades?: number;
+  highestProfit?: number;
+  lowestLoss?: number;
+  totalVolume?: number;
 }
 
-export type ActionType = 'buy' | 'sell' | 'trigger' | 'condition';
+export interface ExecutionState {
+  status: ExecutionStatus;
+  errors: string[];
+  lastUpdate: number;
+  currentBlock?: string;
+  nextExecution?: number;
+  gasPrice?: number;
+  networkStatus?: {
+    chainId: number;
+    blockNumber: number;
+    timestamp: number;
+  };
+}
 
-export type ExecutedAction = {
-  blockId: string;
-  timestamp: number;
-  type: ActionType;
-  amount: number;
-  price: number;
-  status: 'pending' | 'completed' | 'failed';
+export interface TradeResult {
+  success: boolean;
   txHash?: string;
-  pair?: string;
-  errorMessage?: string;
+  error?: string;
+  gasUsed: number;
+  timestamp: number;
+  price: number;
+  amount: number;
+  type: 'buy' | 'sell';
 }
 
-export type ExecutionError = {
-  timestamp: number;
-  blockId?: string;
-  message: string;
-  code: string;
+export interface BlockExecutionResult {
+  success: boolean;
+  error?: string;
+  output?: any;
+  gasUsed: number;
 }
 
 export interface BlockExecutor {

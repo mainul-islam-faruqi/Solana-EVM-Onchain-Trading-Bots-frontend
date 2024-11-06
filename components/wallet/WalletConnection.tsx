@@ -19,24 +19,31 @@ import { cn } from '@/lib/utils';
 import { useNetwork, useSwitchNetwork, useDisconnect } from 'wagmi';
 import { mainnet, polygon } from 'wagmi/chains';
 import { useWallet } from '@solana/wallet-adapter-react';
+import React from 'react';
 
 export function WalletConnection() {
   const { isConnected, currentWallet, walletState } = useWalletConnection();
   const { selectedChain, setSelectedChain } = useChain();
   const { openConnectModal: openEvmModal } = useConnectModal();
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork();
-  const [selectedNetwork, setSelectedNetwork] = useState<number | null>(null);
   const { disconnect: disconnectEvm } = useDisconnect();
   const { disconnect: disconnectSolana } = useWallet();
+  
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (chain?.id) {
       setSelectedNetwork(chain.id);
     }
-  }, [chain]);
+  }, [chain?.id]);
 
   useEffect(() => {
     const handleNetworkSwitch = async () => {
@@ -51,6 +58,27 @@ export function WalletConnection() {
 
     handleNetworkSwitch();
   }, [isConnected, selectedNetwork, chain?.id, switchNetwork]);
+
+  if (!mounted) {
+    return (
+      <Button 
+        variant="secondary"
+        size="sm"
+        className={cn(
+          "relative overflow-hidden",
+          "flex items-center gap-2 h-9 px-4",
+          "rounded-full transition-all duration-300",
+          "bg-gradient-to-r from-violet-500/10 to-purple-500/10",
+          "border border-violet-200/50"
+        )}
+      >
+        <Wallet className="h-4 w-4 text-violet-500" />
+        <span className="hidden sm:inline text-violet-100 font-medium">
+          Connect Wallet
+        </span>
+      </Button>
+    );
+  }
 
   const handleNetworkSwitch = async (chainId: number) => {
     try {
@@ -103,7 +131,6 @@ export function WalletConnection() {
 
   const handleEvmConnect = async () => {
     try {
-      // Just open the connect modal - network switching will happen after wallet selection
       openEvmModal?.();
       setOpen(false);
     } catch (error) {

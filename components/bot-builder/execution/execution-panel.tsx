@@ -18,12 +18,14 @@ import { ExecutionEngine } from './execution-engine'
 import { ExecutionState } from './types'
 import { BotStrategy } from '../types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface ExecutionPanelProps {
   strategy: BotStrategy;
 }
 
 export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
+  const { toast } = useToast();
   const [engine, setEngine] = React.useState<ExecutionEngine | null>(null)
   const [executionState, setExecutionState] = React.useState<ExecutionState | null>(null)
   const [metrics, setMetrics] = React.useState({
@@ -39,7 +41,9 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
     setEngine(newEngine)
 
     return () => {
-      newEngine.stop()
+      if (newEngine) {
+        newEngine.stop()
+      }
     }
   }, [strategy])
 
@@ -56,11 +60,24 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
   }, [engine, executionState?.status])
 
   const handleStart = async () => {
-    if (engine) {
-      await engine.start()
-      setExecutionState(engine.getExecutionState())
+    if (!engine) return;
+
+    try {
+      await engine.start();
+      setExecutionState(engine.getExecutionState());
+      toast({
+        title: "Bot Started",
+        description: "Strategy execution has begun",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Start Failed",
+        description: error instanceof Error ? error.message : "Failed to start bot",
+        variant: "error",
+      });
     }
-  }
+  };
 
   const handlePause = async () => {
     if (engine) {

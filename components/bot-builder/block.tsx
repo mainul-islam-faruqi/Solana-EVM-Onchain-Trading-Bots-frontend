@@ -1,10 +1,11 @@
 'use client'
 
-import * as React from 'react'
+import React from 'react'
 import { BlockType, Position } from './types'
 import { Zap, DollarSign, Blocks, GripHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface BlockProps {
   block: BlockType;
@@ -32,8 +33,105 @@ export function Block({
   const [localConfig, setLocalConfig] = React.useState(block.config)
 
   React.useEffect(() => {
-    setLocalConfig(block.config)
-  }, [block.config])
+    if (JSON.stringify(localConfig) !== JSON.stringify(block.config)) {
+      setLocalConfig(block.config);
+    }
+  }, [block.config]);
+
+  const handleConfigChange = (key: string, value: any) => {
+    const newConfig = {
+      ...localConfig,
+      [key]: value
+    };
+    setLocalConfig(newConfig);
+    
+    onConfigChange(block.id, newConfig);
+  };
+
+  const renderConfigInput = (key: string, value: any) => {
+    const commonClasses = cn(
+      "bg-darker border-darker/60 text-accent text-sm",
+      "focus:border-accent/40 focus:ring-2 focus:ring-accent/20",
+      "focus:outline-none",
+      "hover:border-accent/30 transition-all duration-200",
+      "placeholder-accent/30",
+      "shadow-sm shadow-black/10",
+      "focus-within:shadow-accent/5"
+    )
+
+    if (key === 'amount' || key === 'price' || key === 'stopPrice') {
+      return (
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => handleConfigChange(key, parseFloat(e.target.value) || 0)}
+          className={cn(
+            commonClasses, 
+            "h-6 w-24",
+            "focus-visible:ring-offset-1",
+            "focus-visible:ring-accent/30"
+          )}
+          step="0.000001"
+          min="0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+        />
+      )
+    }
+
+    if (key === 'condition') {
+      return (
+        <Select
+          value={value}
+          onValueChange={(v) => handleConfigChange(key, v)}
+          onOpenChange={() => onClick()}
+          
+        >
+          <SelectTrigger 
+            className={cn(
+              commonClasses,
+              "h-6 w-24",
+              "hover:bg-darker/80",
+              "data-[state=open]:bg-darker/90",
+              "focus:ring-offset-1",
+              "focus-visible:ring-accent/30"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SelectValue>{value}</SelectValue>
+          </SelectTrigger>
+          <SelectContent className="bg-darker border-darker/60">
+            <SelectItem 
+              value="above"
+              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+            >
+              Above
+            </SelectItem>
+            <SelectItem 
+              value="below"
+              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+            >
+              Below
+            </SelectItem>
+            <SelectItem 
+              value="equals"
+              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+            >
+              Equals
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      )
+    }
+
+    return (
+      <span className="font-medium text-accent">
+        {value != null ? value.toString() : '-'}
+      </span>
+    )
+  }
 
   const getBlockIcon = () => {
     switch (block.type) {
@@ -76,55 +174,6 @@ export function Block({
     }
   }
 
-  const handleConfigChange = (key: string, value: any) => {
-    const newConfig = {
-      ...block.config,
-      [key]: value
-    }
-    onConfigChange(block.id, newConfig)
-  }
-
-  const renderConfigValue = (key: string, value: any) => {
-    if (key === 'amount' || key === 'price' || key === 'stopPrice') {
-      return (
-        <Input
-          type="number"
-          value={value}
-          onChange={(e) => handleConfigChange(key, parseFloat(e.target.value) || 0)}
-          className="h-6 w-24 bg-darker border-accent/20 text-accent text-sm"
-          step="0.000001"
-          min="0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-        />
-      )
-    }
-    if (key === 'condition') {
-      return (
-        <Select
-          value={value}
-          onValueChange={(v) => handleConfigChange(key, v)}
-          onOpenChange={() => onClick()}
-        >
-          <SelectTrigger 
-            className="h-6 w-24 bg-darker border-accent/20 text-accent text-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SelectValue>{value}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="above">Above</SelectItem>
-            <SelectItem value="below">Below</SelectItem>
-            <SelectItem value="equals">Equals</SelectItem>
-          </SelectContent>
-        </Select>
-      )
-    }
-    return <span className="font-medium text-accent">{value.toString()}</span>
-  }
-
   React.useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove)
@@ -139,14 +188,22 @@ export function Block({
 
   return (
     <div
-      className={`
-        relative p-4 bg-darker/80 border border-accent/20 rounded-lg backdrop-blur-sm
-        min-w-[200px] select-none
-        ${selected ? 'ring-2 ring-accent' : ''}
-        ${isDragging ? 'opacity-75 cursor-grabbing shadow-lg' : 'cursor-grab shadow-md'}
-        hover:shadow-lg hover:border-accent/50 hover:bg-darker
-        transition-all duration-200
-      `}
+      className={cn(
+        "relative p-4 rounded-lg backdrop-blur-sm",
+        "min-w-[200px] select-none transition-all duration-200",
+        "border border-accent/20",
+        "bg-gradient-to-br from-darker/80 to-darker/60",
+        selected && "ring-2 ring-accent shadow-lg shadow-accent/10",
+        isDragging ? [
+          "opacity-75 cursor-grabbing",
+          "shadow-xl shadow-accent/20"
+        ] : [
+          "cursor-grab shadow-md",
+          "hover:shadow-lg hover:shadow-accent/10",
+          "hover:border-accent/50",
+          "hover:bg-darker/70"
+        ]
+      )}
       onClick={onClick}
       onMouseDown={handleMouseDown}
       onContextMenu={(e) => {
@@ -170,7 +227,7 @@ export function Block({
           {Object.entries(localConfig).map(([key, value]) => (
             <div key={key} className="flex justify-between items-center">
               <span className="capitalize text-light">{key}:</span>
-              {renderConfigValue(key, value)}
+              {renderConfigInput(key, value)}
             </div>
           ))}
         </div>
@@ -185,4 +242,15 @@ export function Block({
         transition-all duration-200" />
     </div>
   )
+}
+
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 } 

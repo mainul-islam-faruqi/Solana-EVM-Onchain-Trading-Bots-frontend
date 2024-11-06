@@ -36,6 +36,12 @@ const routes = [
     color: "text-violet-500",
   },
   {
+    label: "Strategy Library",
+    icon: BookOpen,
+    href: "/strategies",
+    color: "text-emerald-500",
+  },
+  {
     label: "Analytics",
     icon: LineChart,
     href: "/analytics",

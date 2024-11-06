@@ -1,166 +1,215 @@
-import { 
-  ExecutionContext, 
-  BlockExecutor,
-  ExecutionError,
-  MarketData 
-} from './types'
-import { BlockType, BotStrategy } from '../types'
-import { 
-  PriceTriggerExecutor,
-  MarketOrderExecutor,
-  LimitOrderExecutor
-} from './block-executors'
+import { BotStrategy } from '../types';
+import { ExecutionState, ExecutionMetrics, TradeResult, BlockExecutionResult } from './types';
+import { BlockExecutors } from './block-executors';
+import { ethers } from 'ethers';
+// import { getPriceData } from '@/lib/price-feeds/price-service';
 
 export class ExecutionEngine {
-  private executors: Map<string, BlockExecutor>
-  private context: ExecutionContext
-  private intervalId?: NodeJS.Timeout
+  private strategy: BotStrategy;
+  private state: ExecutionState;
+  private metrics: ExecutionMetrics;
+  private executors: BlockExecutors;
+  private executionInterval: NodeJS.Timeout | null = null;
+  private tradeHistory: TradeResult[] = [];
+  private provider: ethers.providers.Provider;
+  private lastGasCheck: number = 0;
+  private readonly GAS_CHECK_INTERVAL = 30000; // 30 seconds
 
   constructor(strategy: BotStrategy) {
-    this.executors = new Map()
-    this.context = {
-      strategy,
-      marketData: {
-        price: 0,
-        timestamp: 0,
-        volume24h: 0,
-        priceChange24h: 0
-      },
-      walletBalance: {},
-      executionState: {
-        status: 'idle',
-        executedActions: [],
-        errors: []
-      }
-    }
-
-    // Register block executors
-    this.registerExecutors()
+    this.strategy = strategy;
+    this.state = {
+      status: 'idle',
+      errors: [],
+      lastUpdate: Date.now(),
+    };
+    this.metrics = {
+      profitLoss: 0,
+      totalTrades: 0,
+      successRate: 0,
+      lastTradeTime: null,
+      gasUsed: 0,
+      avgExecutionTime: 0,
+      failedTrades: 0,
+      highestProfit: 0,
+      lowestLoss: 0,
+      totalVolume: 0,
+    };
+    this.executors = new BlockExecutors();
+    this.provider = ethers.getDefaultProvider();
   }
 
-  private registerExecutors() {
-    // Register different types of block executors
-    this.executors.set('price-trigger', new PriceTriggerExecutor())
-    
-    // Use MarketOrderExecutor for both buy and sell
-    const marketExecutor = new MarketOrderExecutor()
-    this.executors.set('market-buy', marketExecutor)
-    this.executors.set('market-sell', marketExecutor)
-    
-    // Use LimitOrderExecutor for limit orders
-    const limitExecutor = new LimitOrderExecutor()
-    this.executors.set('limit-buy', limitExecutor)
-    this.executors.set('limit-sell', limitExecutor)
-    this.executors.set('take-profit', limitExecutor)
-    this.executors.set('stop-loss', limitExecutor)
-  }
-
-  private async updateMarketData(): Promise<void> {
-    try {
-      // TODO: Implement real market data fetching
-      this.context.marketData = {
-        price: Math.random() * 1000, // Mock price for now
-        timestamp: Date.now(),
-        volume24h: Math.random() * 1000000,
-        priceChange24h: (Math.random() - 0.5) * 10
-      }
-    } catch (error) {
-      this.addError({
-        timestamp: Date.now(),
-        message: 'Failed to update market data',
-        code: 'MARKET_DATA_ERROR'
-      })
-    }
-  }
-
-  private addError(error: ExecutionError) {
-    this.context.executionState.errors.push(error)
-    if (this.context.executionState.errors.length > 100) {
-      // Keep only last 100 errors
-      this.context.executionState.errors = this.context.executionState.errors.slice(-100)
-    }
-  }
-
-  private async executeBlock(block: BlockType): Promise<void> {
-    const executor = this.executors.get(block.id)
-    if (!executor) {
-      this.addError({
-        timestamp: Date.now(),
-        blockId: block.id,
-        message: `No executor found for block type: ${block.type}`,
-        code: 'EXECUTOR_NOT_FOUND'
-      })
-      return
-    }
+  async start(): Promise<void> {
+    if (this.state.status === 'running') return;
 
     try {
-      await executor.execute(this.context)
+      // Initialize network connection
+      await this.initializeNetwork();
+
+      // Start execution loop
+      this.state.status = 'running';
+      this.executionInterval = setInterval(
+        () => this.executeStrategy(),
+        5000 // 5 second interval
+      );
+
+      // Start gas price monitoring
+      this.startGasMonitoring();
     } catch (error) {
-      this.addError({
-        timestamp: Date.now(),
-        blockId: block.id,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        code: 'EXECUTION_ERROR'
-      })
+      this.handleError('Failed to start execution', error);
     }
   }
 
-  private async executeCycle(): Promise<void> {
-    await this.updateMarketData()
-
-    // Execute triggers first
-    const triggers = this.context.strategy.blocks.filter(b => b.type === 'trigger')
-    for (const trigger of triggers) {
-      await this.executeBlock(trigger)
+  async pause(): Promise<void> {
+    this.state.status = 'paused';
+    if (this.executionInterval) {
+      clearInterval(this.executionInterval);
+      this.executionInterval = null;
     }
+  }
 
-    // Then execute connected actions
-    const executedTriggers = this.context.executionState.executedActions
-      .filter(a => a.timestamp > Date.now() - 5000) // Consider actions from last 5 seconds
+  async stop(): Promise<void> {
+    this.state.status = 'idle';
+    if (this.executionInterval) {
+      clearInterval(this.executionInterval);
+      this.executionInterval = null;
+    }
+    // Clean up resources
+    this.cleanupResources();
+  }
 
-    for (const trigger of executedTriggers) {
-      const connections = this.context.strategy.connections
-        .filter(c => c.sourceId === trigger.blockId)
+  getExecutionState(): ExecutionState {
+    return { ...this.state };
+  }
 
-      for (const connection of connections) {
-        const actionBlock = this.context.strategy.blocks
-          .find(b => b.id === connection.targetId)
+  getMetrics(): ExecutionMetrics {
+    return { ...this.metrics };
+  }
+
+  private async executeStrategy(): Promise<void> {
+    if (this.state.status !== 'running') return;
+
+    try {
+      // Update network status
+      await this.updateNetworkStatus();
+
+      // Check gas price
+      if (await this.shouldSkipExecution()) {
+        return;
+      }
+
+      // Execute blocks in sequence
+      for (const block of this.strategy.blocks) {
+        this.state.currentBlock = block.id;
         
-        if (actionBlock) {
-          await this.executeBlock(actionBlock)
+        // Get block dependencies
+        const dependencies = this.getDependencies(block.id);
+        
+        // Execute block with retry mechanism
+        const result = await this.executeBlockWithRetry(block, dependencies);
+        
+        if (!result.success) {
+          throw new Error(`Block execution failed: ${result.error}`);
         }
+
+        // Update metrics
+        this.updateMetrics(result);
+      }
+
+      this.state.lastUpdate = Date.now();
+    } catch (error) {
+      this.handleError('Strategy execution failed', error);
+    }
+  }
+
+  private async executeBlockWithRetry(
+    block: any,
+    dependencies: any[],
+    maxRetries = 3
+  ): Promise<BlockExecutionResult> {
+    let lastError: Error | undefined;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const executor = this.executors.getExecutor(block.type);
+        const result = await executor.execute(block, dependencies);
+        return result;
+      } catch (error) {
+        lastError = error as Error;
+        await this.delay(1000 * Math.pow(2, i)); // Exponential backoff
       }
     }
+
+    return {
+      success: false,
+      error: lastError?.message || 'Max retries exceeded',
+      gasUsed: 0
+    };
   }
 
-  public async start(): Promise<void> {
-    if (this.context.executionState.status === 'running') {
-      return
+  private async initializeNetwork(): Promise<void> {
+    // Initialize network-specific resources
+  }
+
+  private async updateNetworkStatus(): Promise<void> {
+    const blockNumber = await this.provider.getBlockNumber();
+    const block = await this.provider.getBlock(blockNumber);
+    
+    this.state.networkStatus = {
+      chainId: (await this.provider.getNetwork()).chainId,
+      blockNumber,
+      timestamp: block.timestamp
+    };
+  }
+
+  private async shouldSkipExecution(): Promise<boolean> {
+    const now = Date.now();
+    if (now - this.lastGasCheck < this.GAS_CHECK_INTERVAL) {
+      return false;
     }
 
-    this.context.executionState.status = 'running'
-    this.intervalId = setInterval(() => this.executeCycle(), 1000)
+    this.lastGasCheck = now;
+    const gasPrice = await this.provider.getGasPrice();
+    this.state.gasPrice = gasPrice.toNumber();
+
+    // Skip if gas price is too high
+    const maxGasPrice = ethers.utils.parseUnits('100', 'gwei');
+    return gasPrice.gt(maxGasPrice);
   }
 
-  public async stop(): Promise<void> {
-    if (this.intervalId) {
-      clearInterval(this.intervalId)
+  private getDependencies(blockId: string): any[] {
+    // Get input values from connected blocks
+    return [];
+  }
+
+  private updateMetrics(result: BlockExecutionResult): void {
+    // Update execution metrics
+    if (result.success) {
+      this.metrics.totalTrades++;
+      this.metrics.gasUsed += result.gasUsed;
+      this.metrics.lastTradeTime = Date.now();
+      this.metrics.successRate = 
+        (this.metrics.totalTrades - this.metrics.failedTrades!) / 
+        this.metrics.totalTrades * 100;
+    } else {
+      this.metrics.failedTrades!++;
     }
-    this.context.executionState.status = 'idle'
   }
 
-  public async pause(): Promise<void> {
-    this.context.executionState.status = 'paused'
-    if (this.intervalId) {
-      clearInterval(this.intervalId)
-    }
+  private startGasMonitoring(): void {
+    // Monitor gas prices and optimize execution timing
   }
 
-  public getExecutionState() {
-    return this.context.executionState
+  private cleanupResources(): void {
+    // Clean up any resources, connections, or subscriptions
   }
 
-  public getMarketData() {
-    return this.context.marketData
+  private handleError(message: string, error: any): void {
+    console.error(message, error);
+    this.state.status = 'error';
+    this.state.errors.push(error.message);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 } 
