@@ -21,6 +21,8 @@ import { useStrategyTemplate } from '@/hooks/useStrategyTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PriceMonitoringPanel } from './price-monitoring/price-panel';
+import { AssetManagement } from '@/components/wallet/asset-management';
+import { TokenSelector } from '@/components/bot-builder/token-selector';
 
 
 export function BotBuilder() {
@@ -56,6 +58,8 @@ export function BotBuilder() {
 
   const blockLibraryRef = React.useRef<HTMLDivElement>(null);
   const [blockLibraryHeight, setBlockLibraryHeight] = React.useState<number>(0);
+
+  const [selectedToken, setSelectedToken] = React.useState<any>(null);
 
   // Update block library height on mount and resize
   React.useEffect(() => {
@@ -303,6 +307,18 @@ export function BotBuilder() {
     setSelectedBlock(null);
   };
 
+  const handleTokenSelect = (token: any) => {
+    setSelectedToken(token);
+    // Update strategy config if needed
+    if (selectedBlock) {
+      handleConfigChange(selectedBlock.id, {
+        ...selectedBlock.config,
+        tokenAddress: token.address,
+        tokenSymbol: token.symbol
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-darkest to-dark">
       <div className="container mx-auto px-4 py-12">
@@ -343,7 +359,7 @@ export function BotBuilder() {
                   <h2 className="text-lg font-medium text-lightest">
                     Template Preview: {strategy.name}
                   </h2>
-                  <p className="text-sm text-light/60">
+                  <p className="text-sm text-lighter/70">
                     Review the template strategy before customizing
                   </p>
                 </div>
@@ -351,7 +367,7 @@ export function BotBuilder() {
                   <Button
                     variant="outline"
                     onClick={handleResetStrategy}
-                    className="border-accent/20 text-accent"
+                    className="border-accent/20 text-light"
                   >
                     Start Fresh
                   </Button>
@@ -372,19 +388,23 @@ export function BotBuilder() {
             <div className="flex items-center justify-center p-12">
               <div className="space-y-4 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
-                <p className="text-light">Loading template...</p>
+                <p className="text-lighter">Loading template...</p>
               </div>
             </div>
           )}
 
           {/* Strategy Builder Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-12 gap-6">
             {/* Block Library */}
             <div className="lg:col-span-3" ref={blockLibraryRef}>
-              <BlockLibrary
-                blocks={availableBlocks}
-                onDragStart={handleDragStart}
-              />
+              <div className="space-y-6">
+                <BlockLibrary
+                  blocks={availableBlocks}
+                  onDragStart={handleDragStart}
+                />
+                {/* Add Asset Management below Block Library */}
+                <AssetManagement />
+              </div>
             </div>
 
             {/* Canvas */}
@@ -470,9 +490,9 @@ export function BotBuilder() {
                     <div className="absolute inset-0 flex items-center justify-center text-lightest">
                       <div className="text-center">
                         <div className="inline-block p-3 rounded-full bg-darker/50 mb-4">
-                          <AlertCircle className="w-6 h-6 text-light" />
+                          <AlertCircle className="w-6 h-6 text-lighter" />
                         </div>
-                        <p className="text-sm text-light">Drag blocks from the library to start building your strategy</p>
+                        <p className="text-sm text-lighter">Drag blocks from the library to start building your strategy</p>
                       </div>
                     </div>
                   )}
@@ -486,7 +506,7 @@ export function BotBuilder() {
                     <AlertCircle className="h-4 w-4" />
                     <h4 className="font-medium text-lightest">Validation Errors</h4>
                   </div>
-                  <ul className="space-y-1 text-sm text-light">
+                  <ul className="space-y-1 text-sm text-lighter">
                     {validationErrors.map((error, index) => (
                       <li key={index}>{error.message}</li>
                     ))}
@@ -498,12 +518,32 @@ export function BotBuilder() {
 
           {/* Configuration and Execution */}
           <div className="grid grid-cols-2 gap-6">
+            {/* Configuration Panel */}
             <div className="col-span-1">
               {selectedBlock ? (
-                <BlockConfigPanel
-                  selectedBlock={selectedBlock}
-                  onConfigChange={handleConfigChange}
-                />
+                <div className="space-y-6">
+                  {/* Add Token Selector if block type is 'action' */}
+                  {selectedBlock.type === 'action' && (
+                    <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm">
+                      <CardHeader className="border-b border-accent/20">
+                        <CardTitle className="text-lightest">Select Token</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <TokenSelector
+                          onSelect={handleTokenSelect}
+                          selectedToken={selectedToken}
+                          label="Select token to trade"
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {/* Existing Block Config Panel */}
+                  <BlockConfigPanel
+                    selectedBlock={selectedBlock}
+                    onConfigChange={handleConfigChange}
+                  />
+                </div>
               ) : (
                 <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm h-full">
                   <CardContent className="flex items-center justify-center min-h-[300px] text-lightest">
@@ -512,22 +552,30 @@ export function BotBuilder() {
                 </Card>
               )}
             </div>
+
+            {/* Execution Panel */}
             <div className="col-span-1">
               <ExecutionPanel strategy={strategy} />
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-6 mt-6">
-          {/* Price Monitoring */}
-            <div className="lg:col-span-1">
+          {/* Third Row: Price Monitoring and Strategy Testing */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Price Monitoring */}
+            <div>
               <PriceMonitoringPanel 
-                tokenAddress="0x..." // Get from selected token
-                chainId={1} // Get from selected network
+                tokenAddress={selectedToken?.address || "0x..."} // Use selected token
+                chainId={selectedToken?.chainId || 1}
               />
-          </div>
-          <div className="lg:col-span-1">
-            <StrategyTester strategy={strategy} />
+            </div>
+
+            {/* Strategy Testing */}
+            <div>
+              <StrategyTester 
+                strategy={strategy}
+                selectedToken={selectedToken} // Pass selected token to tester
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -19,7 +19,7 @@ export function NetworkSettings({ onChange }: NetworkSettingsProps) {
         
         {/* Ethereum RPC */}
         <div className="space-y-2">
-          <Label htmlFor="eth-rpc" className="text-light/60">Ethereum RPC URL</Label>
+          <Label htmlFor="eth-rpc" className="text-lighter/70">Ethereum RPC URL</Label>
           <Input
             id="eth-rpc"
             placeholder="https://mainnet.infura.io/v3/your-api-key"
@@ -33,7 +33,7 @@ export function NetworkSettings({ onChange }: NetworkSettingsProps) {
 
         {/* Polygon RPC */}
         <div className="space-y-2">
-          <Label htmlFor="polygon-rpc" className="text-light/60">Polygon RPC URL</Label>
+          <Label htmlFor="polygon-rpc" className="text-lighter/70">Polygon RPC URL</Label>
           <Input
             id="polygon-rpc"
             placeholder="https://polygon-rpc.com"
@@ -51,7 +51,7 @@ export function NetworkSettings({ onChange }: NetworkSettingsProps) {
         <h3 className="text-sm font-medium text-lightest">Solana Network</h3>
         
         <div className="space-y-2">
-          <Label htmlFor="solana-network" className="text-light/60">Network</Label>
+          <Label htmlFor="solana-network" className="text-lighter/70">Network</Label>
           <Select defaultValue="mainnet" onValueChange={onChange}>
             <SelectTrigger 
               className={cn(
@@ -70,7 +70,7 @@ export function NetworkSettings({ onChange }: NetworkSettingsProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="solana-rpc" className="text-light/60">Custom RPC URL (Optional)</Label>
+          <Label htmlFor="solana-rpc" className="text-lighter/70">Custom RPC URL (Optional)</Label>
           <Input
             id="solana-rpc"
             placeholder="https://api.mainnet-beta.solana.com"

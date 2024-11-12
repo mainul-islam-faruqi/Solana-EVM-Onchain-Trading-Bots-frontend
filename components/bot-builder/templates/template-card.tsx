@@ -39,10 +39,10 @@ export function TemplateCard({ template, onSelect }: TemplateCardProps) {
 
       <CardHeader className="space-y-2 pb-4">
         <div className="space-y-1">
-          <h3 className="font-medium text-lg text-lightest group-hover:text-accent transition-colors">
+          <h3 className="font-medium text-lg text-lightest group-hover:text-light transition-colors">
             {template.name}
           </h3>
-          <div className="flex items-center gap-3 text-xs text-light/60">
+          <div className="flex items-center gap-3 text-xs text-lighter/70">
             <div className="flex items-center gap-1">
               <Users className="h-3 w-3" />
               <span>{template.usageCount} uses</span>
@@ -57,20 +57,20 @@ export function TemplateCard({ template, onSelect }: TemplateCardProps) {
 
       <CardContent className="space-y-4">
         {/* Description */}
-        <p className="text-sm text-light/70 line-clamp-2">
+        <p className="text-sm text-lighter/70 line-clamp-2">
           {template.description}
         </p>
 
         {/* Strategy Info */}
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-darker/50 rounded-lg border border-accent/10 p-2">
-            <div className="flex items-center gap-1.5 text-xs text-light/60">
+            <div className="flex items-center gap-1.5 text-xs text-lighter/70">
               <Blocks className="h-3 w-3" />
               <span>{template.strategy.blocks.length} Blocks</span>
             </div>
           </div>
           <div className="bg-darker/50 rounded-lg border border-accent/10 p-2">
-            <div className="flex items-center gap-1.5 text-xs text-light/60">
+            <div className="flex items-center gap-1.5 text-xs text-lighter/70">
               <Activity className="h-3 w-3" />
               <span>{template.strategy.connections.length} Connections</span>
             </div>
@@ -85,7 +85,7 @@ export function TemplateCard({ template, onSelect }: TemplateCardProps) {
               className={cn(
                 "text-xs px-2 py-1 rounded-lg",
                 "border border-accent/10",
-                "bg-darker/50 text-light/80"
+                "bg-darker/50 text-lighter/90"
               )}
             >
               {chain}
@@ -99,7 +99,7 @@ export function TemplateCard({ template, onSelect }: TemplateCardProps) {
           className={cn(
             "w-full",
             "bg-accent/5 hover:bg-accent/10",
-            "text-accent hover:text-accent",
+            "text-light hover:text-light",
             "border border-accent/10 hover:border-accent/20",
             "transition-all duration-200"
           )}

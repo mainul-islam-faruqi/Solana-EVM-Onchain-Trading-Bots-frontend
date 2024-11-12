@@ -18,13 +18,13 @@ export function NotificationSettings({ onChange }: NotificationSettingsProps) {
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm font-medium text-lightest">Email Notifications</Label>
-            <p className="text-xs text-light/60 mt-1">Receive bot updates via email</p>
+            <p className="text-xs text-lighter/70 mt-1">Receive bot updates via email</p>
           </div>
           <Switch onCheckedChange={onChange} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-light/60">Email Address</Label>
+          <Label htmlFor="email" className="text-lighter/70">Email Address</Label>
           <Input
             id="email"
             type="email"
@@ -44,17 +44,17 @@ export function NotificationSettings({ onChange }: NotificationSettingsProps) {
         
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-light/60">Trade Execution</Label>
+            <Label className="text-sm text-lighter/70">Trade Execution</Label>
             <Switch onCheckedChange={onChange} />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-light/60">Price Alerts</Label>
+            <Label className="text-sm text-lighter/70">Price Alerts</Label>
             <Switch onCheckedChange={onChange} />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-sm text-light/60">Error Alerts</Label>
+            <Label className="text-sm text-lighter/70">Error Alerts</Label>
             <Switch onCheckedChange={onChange} defaultChecked />
           </div>
         </div>
@@ -65,13 +65,13 @@ export function NotificationSettings({ onChange }: NotificationSettingsProps) {
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm font-medium text-lightest">Telegram Bot</Label>
-            <p className="text-xs text-light/60 mt-1">Receive notifications on Telegram</p>
+            <p className="text-xs text-lighter/70 mt-1">Receive notifications on Telegram</p>
           </div>
           <Switch onCheckedChange={onChange} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="telegram" className="text-light/60">Telegram Chat ID</Label>
+          <Label htmlFor="telegram" className="text-lighter/70">Telegram Chat ID</Label>
           <Input
             id="telegram"
             placeholder="Enter your Telegram chat ID"

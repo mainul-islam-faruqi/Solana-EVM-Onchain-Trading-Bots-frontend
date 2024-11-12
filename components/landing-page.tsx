@@ -15,7 +15,7 @@ export function LandingPage() {
           <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-accent to-error">
             No-Code Trading Bot Builder
           </h1>
-          <p className="text-xl text-light/80 max-w-2xl mx-auto">
+          <p className="text-xl text-lighter/90 max-w-2xl mx-auto">
             Create and manage automated trading strategies across multiple blockchains without writing a single line of code.
           </p>
         </div>

@@ -24,7 +24,7 @@ export function ActiveBotsList() {
       <CardHeader className="border-b border-accent/20">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-accent" />
+            <Bot className="h-5 w-5 text-light" />
             <span className="text-lightest">Active Bots</span>
           </div>
           <Button variant="outline" size="sm">View All</Button>
@@ -46,20 +46,20 @@ export function ActiveBotsList() {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h3 className="font-medium text-lightest">{bot.name}</h3>
-                  <p className="text-xs text-light/60">{bot.type}</p>
+                  <p className="text-xs text-lighter/70">{bot.type}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   {bot.status === 'running' ? (
                     <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <PauseCircle className="h-4 w-4 text-accent" />
+                      <PauseCircle className="h-4 w-4 text-light" />
                     </Button>
                   ) : (
                     <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <PlayCircle className="h-4 w-4 text-accent" />
+                      <PlayCircle className="h-4 w-4 text-light" />
                     </Button>
                   )}
                   <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <Settings className="h-4 w-4 text-light/60" />
+                    <Settings className="h-4 w-4 text-lighter/70" />
                   </Button>
                 </div>
               </div>

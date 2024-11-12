@@ -21,7 +21,7 @@ export function PriceMonitoringPanel({ tokenAddress, chainId }: PriceMonitoringP
       <CardHeader className="border-b border-accent/20">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-accent" />
+            <TrendingUp className="h-5 w-5 text-light" />
             <span className="text-lightest">Price Monitor</span>
           </div>
           {priceData && (
@@ -44,11 +44,11 @@ export function PriceMonitoringPanel({ tokenAddress, chainId }: PriceMonitoringP
         {/* Current Price */}
         {priceData && (
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="text-sm font-medium text-light mb-1">Current Price</div>
+            <div className="text-sm font-medium text-lighter mb-1">Current Price</div>
             <div className="text-2xl font-bold text-lightest">
               {formatCurrency(priceData.price)}
             </div>
-            <div className="text-xs text-light/60 mt-1">
+            <div className="text-xs text-lighter/70 mt-1">
               Updated {new Date(priceData.timestamp).toLocaleTimeString()}
             </div>
           </div>
@@ -65,7 +65,7 @@ export function PriceMonitoringPanel({ tokenAddress, chainId }: PriceMonitoringP
         {/* Volume Info */}
         {priceData?.volume24h && (
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="text-sm font-medium text-light mb-1">24h Volume</div>
+            <div className="text-sm font-medium text-lighter mb-1">24h Volume</div>
             <div className="text-lg font-bold text-lightest">
               {formatCurrency(priceData.volume24h)}
             </div>

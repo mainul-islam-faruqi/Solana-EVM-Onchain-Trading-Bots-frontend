@@ -74,13 +74,13 @@ export function StrategyTester({ strategy }: StrategyTesterProps) {
             {/* Summary */}
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-                <div className="text-sm font-medium text-light mb-1">Total Trades</div>
+                <div className="text-sm font-medium text-lighter mb-1">Total Trades</div>
                 <div className="text-lg font-bold text-lightest">
                   {testResults.length}
                 </div>
               </div>
               <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-                <div className="text-sm font-medium text-light mb-1">Success Rate</div>
+                <div className="text-sm font-medium text-lighter mb-1">Success Rate</div>
                 <div className="text-lg font-bold text-success">
                   {formatNumber(
                     (testResults.filter(r => r.success).length / testResults.length) * 100
@@ -88,7 +88,7 @@ export function StrategyTester({ strategy }: StrategyTesterProps) {
                 </div>
               </div>
               <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-                <div className="text-sm font-medium text-light mb-1">Avg. Gas</div>
+                <div className="text-sm font-medium text-lighter mb-1">Avg. Gas</div>
                 <div className="text-lg font-bold text-lightest">
                   {formatNumber(
                     testResults.reduce((acc, r) => acc + (r.details.gas || 0), 0) / testResults.length
@@ -109,7 +109,7 @@ export function StrategyTester({ strategy }: StrategyTesterProps) {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-light">
+                    <span className="text-sm font-medium text-lighter">
                       {new Date(result.timestamp).toLocaleTimeString()}
                     </span>
                     <span className={`text-sm ${
@@ -119,7 +119,7 @@ export function StrategyTester({ strategy }: StrategyTesterProps) {
                     </span>
                   </div>
                   {result.details.price && (
-                    <div className="text-xs text-light mt-1">
+                    <div className="text-xs text-lighter mt-1">
                       Price: {formatCurrency(result.details.price)}
                     </div>
                   )}

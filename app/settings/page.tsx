@@ -44,11 +44,11 @@ export default function SettingsPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
-              <SettingsIcon className="h-6 w-6 text-accent" />
+              <SettingsIcon className="h-6 w-6 text-light" />
             </div>
             <h1 className="text-2xl font-bold text-lightest">Settings</h1>
           </div>
-          <p className="text-light/60 max-w-2xl">
+          <p className="text-lighter/70 max-w-2xl">
             Configure your bot settings, notifications, and security preferences
           </p>
         </div>
@@ -59,7 +59,7 @@ export default function SettingsPage() {
           <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm lg:col-span-2">
             <CardHeader className="border-b border-accent/20">
               <CardTitle className="flex items-center gap-2">
-                <Network className="h-5 w-5 text-accent" />
+                <Network className="h-5 w-5 text-light" />
                 <span  className=" text-lightest">Network Settings</span>
               </CardTitle>
             </CardHeader>
@@ -72,7 +72,7 @@ export default function SettingsPage() {
           <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm">
             <CardHeader className="border-b border-accent/20">
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-accent" />
+                <Bell className="h-5 w-5 text-light" />
                 <span className=" text-lightest">Notifications</span>
               </CardTitle>
             </CardHeader>
@@ -85,7 +85,7 @@ export default function SettingsPage() {
           <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm">
             <CardHeader className="border-b border-accent/20">
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-accent" />
+                <Shield className="h-5 w-5 text-light" />
                 <span className=" text-lightest">Security</span>
               </CardTitle>
             </CardHeader>
@@ -98,7 +98,7 @@ export default function SettingsPage() {
           <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm lg:col-span-2">
             <CardHeader className="border-b border-accent/20">
               <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-accent" />
+                <Key className="h-5 w-5 text-light" />
                 <span className=" text-lightest">API Keys</span>
               </CardTitle>
             </CardHeader>

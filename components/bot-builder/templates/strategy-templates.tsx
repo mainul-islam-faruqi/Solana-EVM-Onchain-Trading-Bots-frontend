@@ -96,7 +96,7 @@ export function StrategyTemplates({ onSelectTemplate }: StrategyTemplatesProps) 
             variant={selectedCategory === category.id ? 'default' : 'outline'}
             className={cn(
               "h-auto py-4 flex flex-col items-center gap-2",
-              "text-accent border-accent/20 transition-all duration-200",
+              "text-light border-accent/20 transition-all duration-200",
               selectedCategory === category.id
                 ? "bg-violet-500 text-white hover:bg-violet-600"
                 : "hover:bg-violet-500/10"

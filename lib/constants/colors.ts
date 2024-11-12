@@ -7,7 +7,8 @@ export const COLORS = {
   secondary: '7B2CBF',  // Secondary actions
   accent: '9D4EDD',     // Accent color
   light: 'C77DFF',      // Light accents
-  lightest: 'E0AAFF',   // Highlights
+  lighter: 'E0AAFF',   // Highlights
+  lightest: 'E6D5FF',   // Highlights
 } as const
 
 // Create Tailwind color config
@@ -19,6 +20,7 @@ export const tailwindColors = {
   secondary: `#${COLORS.secondary}`,
   accent: `#${COLORS.accent}`,
   light: `#${COLORS.light}`,
+  lighter: `#${COLORS.lighter}`,
   lightest: `#${COLORS.lightest}`,
 }
 
@@ -33,8 +35,8 @@ export const colorWithOpacity = {
 
 // Create semantic colors
 export const statusColors = {
-  success: '#4CC9F0',
-  error: '#F72585',
+  success: '#10b981',
+  error: '#f7256e',
   warning: '#FFB86C',
   info: `#${COLORS.accent}`,
 }
@@ -43,7 +45,7 @@ export const statusColors = {
 export const textColors = {
   // Primary text colors
   primary: `#${COLORS.lightest}`,       // Brightest text - E0AAFF
-  secondary: `#${COLORS.light}`,        // Secondary text - C77DFF
+  secondary: `#${COLORS.lighter}`,        // Secondary text - C77DFF
   tertiary: `#${COLORS.accent}`,        // Tertiary text - 9D4EDD
   
   // Text with opacity

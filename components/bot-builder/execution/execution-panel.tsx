@@ -104,7 +104,7 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
               size="icon"
               onClick={handleStart}
               disabled={executionState?.status === 'running'}
-              className="hover:bg-accent/10 text-light disabled:text-light/50"
+              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
             >
               <PlayCircle className="h-5 w-5" />
             </Button>
@@ -113,7 +113,7 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
               size="icon"
               onClick={handlePause}
               disabled={executionState?.status !== 'running'}
-              className="hover:bg-accent/10 text-light disabled:text-light/50"
+              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
             >
               <PauseCircle className="h-5 w-5" />
             </Button>
@@ -122,7 +122,7 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
               size="icon"
               onClick={handleStop}
               disabled={executionState?.status === 'idle'}
-              className="hover:bg-accent/10 text-light disabled:text-light/50"
+              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
             >
               <StopCircle className="h-5 w-5" />
             </Button>
@@ -132,12 +132,12 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
       <CardContent className="space-y-6 p-6">
         {/* Status */}
         <div className="flex items-center justify-between bg-darker/80 p-3 rounded-lg border border-accent/10">
-          <span className="text-sm font-medium text-light">Status</span>
+          <span className="text-sm font-medium text-lighter">Status</span>
           <span className={`text-sm font-semibold px-3 py-1 rounded-full
             ${executionState?.status === 'running' ? 'bg-success/10 text-success' : ''}
             ${executionState?.status === 'paused' ? 'bg-warning/10 text-warning' : ''}
             ${executionState?.status === 'error' ? 'bg-error/10 text-error' : ''}
-            ${executionState?.status === 'idle' ? 'bg-accent/10 text-accent' : ''}
+            ${executionState?.status === 'idle' ? 'bg-accent/10 text-light' : ''}
           `}>
             {executionState?.status?.toUpperCase() || 'INITIALIZING'}
           </span>
@@ -148,8 +148,8 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
           {/* P&L */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-light" />
-              <span className="text-sm font-medium text-light">P&L</span>
+              <TrendingUp className="h-4 w-4 text-lighter" />
+              <span className="text-sm font-medium text-lighter">P&L</span>
             </div>
             <span className={`text-lg font-bold ${metrics.profitLoss >= 0 ? 'text-success' : 'text-error'}`}>
               {formatCurrency(metrics.profitLoss)}
@@ -159,12 +159,12 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
           {/* Trade Count */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4 text-light" />
-              <span className="text-sm font-medium text-light">Trades</span>
+              <Activity className="h-4 w-4 text-lighter" />
+              <span className="text-sm font-medium text-lighter">Trades</span>
             </div>
-            <span className="text-lg font-bold text-light">
+            <span className="text-lg font-bold text-lighter">
               {metrics.totalTrades}
-              <span className="text-sm text-light/50 ml-2">
+              <span className="text-sm text-lighter/50 ml-2">
                 ({formatNumber(metrics.successRate)}% success)
               </span>
             </span>
@@ -173,10 +173,10 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
           {/* Gas Used */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-4 w-4 text-light" />
-              <span className="text-sm font-medium text-light">Gas Used</span>
+              <Wallet className="h-4 w-4 text-lighter" />
+              <span className="text-sm font-medium text-lighter">Gas Used</span>
             </div>
-            <span className="text-lg font-bold text-light">
+            <span className="text-lg font-bold text-lighter">
               {formatNumber(metrics.gasUsed)} ETH
             </span>
           </div>
@@ -184,10 +184,10 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
           {/* Last Trade */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-light" />
-              <span className="text-sm font-medium text-light">Last Trade</span>
+              <Clock className="h-4 w-4 text-lighter" />
+              <span className="text-sm font-medium text-lighter">Last Trade</span>
             </div>
-            <span className="text-lg font-bold text-light">
+            <span className="text-lg font-bold text-lighter">
               {metrics.lastTradeTime ? new Date(metrics.lastTradeTime).toLocaleTimeString() : 'N/A'}
             </span>
           </div>

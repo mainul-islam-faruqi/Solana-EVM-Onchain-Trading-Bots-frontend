@@ -31,7 +31,7 @@ export function ApiKeySettings({ onChange }: ApiKeySettingsProps) {
             variant="ghost"
             size="sm"
             onClick={() => setShowKey(!showKey)}
-            className="text-light/60 hover:text-light"
+            className="text-lighter/70 hover:text-lighter"
           >
             {showKey ? (
               <EyeOff className="h-4 w-4" />
@@ -68,7 +68,7 @@ export function ApiKeySettings({ onChange }: ApiKeySettingsProps) {
         <h3 className="text-sm font-medium text-lightest">Generate New API Key</h3>
         
         <div className="space-y-2">
-          <Label htmlFor="key-name" className="text-light/60">Key Name</Label>
+          <Label htmlFor="key-name" className="text-lighter/70">Key Name</Label>
           <Input
             id="key-name"
             placeholder="Enter a name for this API key"
@@ -106,7 +106,7 @@ export function ApiKeySettings({ onChange }: ApiKeySettingsProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-medium text-lightest">{key}</h4>
-                  <p className="text-xs text-light/60 mt-1">Created on Apr 1, 2024</p>
+                  <p className="text-xs text-lighter/70 mt-1">Created on Apr 1, 2024</p>
                 </div>
                 <Button
                   variant="destructive"

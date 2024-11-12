@@ -37,11 +37,11 @@ export default function StrategiesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
-              <BookOpen className="h-6 w-6 text-accent" />
+              <BookOpen className="h-6 w-6 text-light" />
             </div>
             <h1 className="text-2xl font-bold text-lightest">Strategy Library</h1>
           </div>
-          <p className="text-light/60 max-w-2xl">
+          <p className="text-lighter/70 max-w-2xl">
             Browse our collection of pre-built trading strategies or create your own. 
             Each strategy is fully customizable and can be deployed across multiple chains.
           </p>

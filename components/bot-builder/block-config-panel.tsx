@@ -132,7 +132,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
       <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm h-full">
         <CardContent className="flex items-center justify-center min-h-[300px] text-lightest">
           <div className="text-center space-y-2">
-            <Settings className="h-8 w-8 mx-auto text-accent/50" />
+            <Settings className="h-8 w-8 mx-auto text-light/50" />
             <p className="text-sm">Select a block to configure</p>
           </div>
         </CardContent>
@@ -153,7 +153,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
               onClick={handleSave}
               className={cn(
                 "px-3 py-1 text-sm rounded-full",
-                "bg-accent/10 text-accent",
+                "bg-accent/10 text-light",
                 "hover:bg-accent/20",
                 "transition-colors duration-200",
                 errors.length > 0 && "opacity-50 cursor-not-allowed"
@@ -171,11 +171,11 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
             <div className="flex items-center justify-between">
               <Label 
                 htmlFor={key} 
-                className="text-sm font-medium flex items-center gap-2 text-light"
+                className="text-sm font-medium flex items-center gap-2 text-lighter"
               >
                 {key.charAt(0).toUpperCase() + key.slice(1)}
                 <InfoTooltip text={getFieldDescription(key)}>
-                  <Info className="h-4 w-4 text-accent/60" />
+                  <Info className="h-4 w-4 text-light/60" />
                 </InfoTooltip>
               </Label>
             </div>
@@ -239,7 +239,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                       "text-lightest",
                       "hover:bg-accent/5",
                       "focus:bg-accent/10",
-                      "focus:text-accent/90",
+                      "focus:text-light/90",
                       "focus:outline-none",
                       "focus-visible:ring-1",
                       "focus-visible:ring-accent/30"
@@ -253,7 +253,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                       "text-lightest",
                       "hover:bg-accent/5",
                       "focus:bg-accent/10",
-                      "focus:text-accent/90",
+                      "focus:text-light/90",
                       "focus:outline-none",
                       "focus-visible:ring-1",
                       "focus-visible:ring-accent/30"
@@ -267,7 +267,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
                       "text-lightest",
                       "hover:bg-accent/5",
                       "focus:bg-accent/10",
-                      "focus:text-accent/90",
+                      "focus:text-light/90",
                       "focus:outline-none",
                       "focus-visible:ring-1",
                       "focus-visible:ring-accent/30"
@@ -294,7 +294,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
           <div className="space-y-1 text-sm">
             {Object.entries(localConfig).map(([key, value]) => (
               <div key={key} className="flex justify-between">
-                <span className="capitalize text-light">{key}:</span>
+                <span className="capitalize text-lighter">{key}:</span>
                 <span className="font-medium text-lightest">
                   {value != null ? value.toString() : '-'}
                 </span>

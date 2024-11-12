@@ -59,7 +59,7 @@ export function RecentTransactions() {
       <CardHeader className="border-b border-accent/20">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <History className="h-5 w-5 text-accent" />
+            <History className="h-5 w-5 text-light" />
             <span className="text-lightest">Recent Transactions</span>
           </div>
           <Button variant="outline" size="sm" className="text-xs">
@@ -95,7 +95,7 @@ export function RecentTransactions() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-light/60">
+                  <span className="text-xs text-lighter/70">
                     {new Date(tx.timestamp).toLocaleTimeString()}
                   </span>
                   <Button
@@ -104,12 +104,12 @@ export function RecentTransactions() {
                     className="h-6 w-6"
                     onClick={() => window.open(getExplorerUrl(tx), '_blank')}
                   >
-                    <ExternalLink className="h-3 w-3 text-accent/60" />
+                    <ExternalLink className="h-3 w-3 text-light/60" />
                   </Button>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-light">
+                <span className="text-lighter">
                   {tx.amount} {tx.token}
                 </span>
                 <span className="font-medium text-lightest">
@@ -117,7 +117,7 @@ export function RecentTransactions() {
                 </span>
               </div>
               {tx.txHash && (
-                <div className="mt-1 text-xs text-light/40">
+                <div className="mt-1 text-xs text-lighter/50">
                   {formatAddress(tx.txHash, 8)}
                 </div>
               )}

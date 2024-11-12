@@ -30,7 +30,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-lightest mb-2">Dashboard</h1>
-          <p className="text-light/60">Monitor your trading bots and market performance</p>
+          <p className="text-lighter/90">Monitor your trading bots and market performance</p>
         </div>
 
         {/* Quick Stats */}
@@ -40,7 +40,7 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
-                  <TrendingUp className="h-5 w-5 text-accent" />
+                  <TrendingUp className="h-5 w-5 text-light" />
                 </div>
                 <span className={cn(
                   "text-sm px-2 py-1 rounded-full",
@@ -52,7 +52,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-light/60">Total P&L</p>
+                <p className="text-sm text-lighter/70">Total P&L</p>
                 <p className="text-2xl font-bold text-success">+$12,450.83</p>
               </div>
             </CardContent>
@@ -70,9 +70,9 @@ export default function DashboardPage() {
                 </Button>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-light/60">Active Bots</p>
+                <p className="text-sm text-lighter/70">Active Bots</p>
                 <p className="text-2xl font-bold text-lightest">8</p>
-                <p className="text-xs text-light/40">of 12 total bots</p>
+                <p className="text-xs text-lighter/50">of 12 total bots</p>
               </div>
             </CardContent>
           </Card>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-light/60">Trading Volume</p>
+                <p className="text-sm text-lighter/70">Trading Volume</p>
                 <p className="text-2xl font-bold text-lightest">$89,245.32</p>
               </div>
             </CardContent>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
                 </Button>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-light/60">Available Balance</p>
+                <p className="text-sm text-lighter/70">Available Balance</p>
                 <p className="text-2xl font-bold text-lightest">$25,450.83</p>
               </div>
             </CardContent>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               <CardHeader className="border-b border-accent/20">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-accent" />
+                    <BarChart3 className="h-5 w-5 text-light" />
                     <span className="text-lightest">Market Overview</span>
                   </div>
                   <div className="flex items-center gap-2">

@@ -50,7 +50,7 @@ export function Block({
 
   const renderConfigInput = (key: string, value: any) => {
     const commonClasses = cn(
-      "bg-darker border-darker/60 text-accent text-sm",
+      "bg-darker border-darker/60 text-light text-sm",
       "focus:border-accent/40 focus:ring-2 focus:ring-accent/20",
       "focus:outline-none",
       "hover:border-accent/30 transition-all duration-200",
@@ -105,19 +105,19 @@ export function Block({
           <SelectContent className="bg-darker border-darker/60">
             <SelectItem 
               value="above"
-              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
             >
               Above
             </SelectItem>
             <SelectItem 
               value="below"
-              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
             >
               Below
             </SelectItem>
             <SelectItem 
               value="equals"
-              className="text-accent hover:bg-accent/5 focus:bg-accent/10 focus:text-accent/90"
+              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
             >
               Equals
             </SelectItem>
@@ -127,7 +127,7 @@ export function Block({
     }
 
     return (
-      <span className="font-medium text-accent">
+      <span className="font-medium text-light">
         {value != null ? value.toString() : '-'}
       </span>
     )
@@ -136,7 +136,7 @@ export function Block({
   const getBlockIcon = () => {
     switch (block.type) {
       case 'trigger':
-        return <Zap className="h-4 w-4 text-accent" />
+        return <Zap className="h-4 w-4 text-light" />
       case 'action':
         return <DollarSign className="h-4 w-4 text-error" />
       default:
@@ -212,7 +212,7 @@ export function Block({
       }}
     >
       <div className="absolute top-2 right-2">
-        <GripHorizontal className="h-4 w-4 text-light" />
+        <GripHorizontal className="h-4 w-4 text-lighter" />
       </div>
 
       <div className="flex items-center space-x-2 mb-2">
@@ -226,7 +226,7 @@ export function Block({
         <div className="space-y-1 text-sm bg-darker p-2 rounded border border-accent/10">
           {Object.entries(localConfig).map(([key, value]) => (
             <div key={key} className="flex justify-between items-center">
-              <span className="capitalize text-light">{key}:</span>
+              <span className="capitalize text-lighter">{key}:</span>
               {renderConfigInput(key, value)}
             </div>
           ))}
@@ -243,14 +243,3 @@ export function Block({
     </div>
   )
 }
-
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-} 

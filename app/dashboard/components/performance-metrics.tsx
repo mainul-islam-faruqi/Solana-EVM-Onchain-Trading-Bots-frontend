@@ -46,7 +46,7 @@ export function PerformanceMetrics() {
       <CardHeader className="border-b border-accent/20">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-accent" />
+            <TrendingUp className="h-5 w-5 text-light" />
             <span className="text-lightest">Performance Metrics</span>
           </div>
           <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ export function PerformanceMetrics() {
                   "text-xs",
                   timeframe === tf
                     ? "bg-accent text-white"
-                    : "text-accent hover:text-accent"
+                    : "text-light hover:text-light"
                 )}
               >
                 {tf}
@@ -75,7 +75,7 @@ export function PerformanceMetrics() {
           {/* Total P&L */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-light/60">Total P&L</span>
+              <span className="text-sm text-lighter/70">Total P&L</span>
               <div className={cn(
                 "flex items-center gap-1 text-xs px-2 py-0.5 rounded-full",
                 metrics.pnlChange >= 0 
@@ -97,8 +97,8 @@ export function PerformanceMetrics() {
           {/* Win Rate */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-light/60">Win Rate</span>
-              <div className="text-xs text-light/40">Last 50 trades</div>
+              <span className="text-sm text-lighter/70">Win Rate</span>
+              <div className="text-xs text-lighter/50">Last 50 trades</div>
             </div>
             <div className="text-2xl font-bold text-lightest">
               {formatNumber(metrics.winRate)}%
@@ -108,8 +108,8 @@ export function PerformanceMetrics() {
           {/* Average Return */}
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-light/60">Avg. Return</span>
-              <div className="text-xs text-light/40">Per trade</div>
+              <span className="text-sm text-lighter/70">Avg. Return</span>
+              <div className="text-xs text-lighter/50">Per trade</div>
             </div>
             <div className="text-2xl font-bold text-lightest">
               {formatNumber(metrics.avgReturn)}%
@@ -128,7 +128,7 @@ export function PerformanceMetrics() {
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
               <ArrowUpRight className="h-4 w-4 text-success" />
-              <span className="text-sm text-light/60">Best Trade</span>
+              <span className="text-sm text-lighter/70">Best Trade</span>
             </div>
             <div className="text-xl font-bold text-success">
               +{formatCurrency(metrics.bestTrade)}
@@ -139,7 +139,7 @@ export function PerformanceMetrics() {
           <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
             <div className="flex items-center gap-2 mb-2">
               <ArrowDownRight className="h-4 w-4 text-error" />
-              <span className="text-sm text-light/60">Worst Trade</span>
+              <span className="text-sm text-lighter/70">Worst Trade</span>
             </div>
             <div className="text-xl font-bold text-error">
               {formatCurrency(metrics.worstTrade)}

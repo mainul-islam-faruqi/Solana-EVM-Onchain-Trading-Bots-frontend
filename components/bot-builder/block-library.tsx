@@ -15,7 +15,7 @@ export function BlockLibrary({ blocks, onDragStart }: BlockLibraryProps) {
   const getBlockIcon = (type: string) => {
     switch (type) {
       case 'trigger':
-        return <Zap className={`h-4 w-4 text-accent`} />
+        return <Zap className={`h-4 w-4 text-light`} />
       case 'action':
         return <DollarSign className={`h-4 w-4 text-error`} />
       default:
@@ -48,7 +48,7 @@ export function BlockLibrary({ blocks, onDragStart }: BlockLibraryProps) {
               </div>
               <div>
                 <div className="font-medium text-sm text-primary">{block.label}</div>
-                <div className="text-xs text-light/60">
+                <div className="text-xs text-lighter/70">
                   {block.type.charAt(0).toUpperCase() + block.type.slice(1)}
                 </div>
               </div>

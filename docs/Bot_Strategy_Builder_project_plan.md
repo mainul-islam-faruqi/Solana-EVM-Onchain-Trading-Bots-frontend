@@ -35,21 +35,60 @@ Here’s a detailed project plan for building a **Complex Bot Strategy Builder**
     - **Conditions**: AND, OR, and NOT logic for complex strategies.
   - **State Management**: Use Redux to manage the state of the strategy flow, active blocks, and connection data.
 
-#### **Phase 2: Backend and Smart Contract Infrastructure**
+Here's a detailed breakdown of **Phase 2: Backend and Smart Contract Infrastructure**
 
-- **Deliverables**:
-  - **Backend Setup**: Build backend services in Node.js/Express to manage strategy storage, user data, bot execution, and real-time data feeds.
-  - **Smart Contract Integration**:
-    - **EVM Chains**: Create or integrate with Solidity contracts to enable order execution on DEXs (Uniswap, SushiSwap).
-    - **Solana**: Use the Solana Program Library (SPL) to deploy Rust programs that interact with Solana DEXs (Serum).
-  - **Data Oracles**: Integrate decentralized data oracles (e.g., Chainlink for EVM, Pyth Network for Solana) for real-time price feeds and other market data.
+---
 
-- **Core Functionality**:
-  - **Bot Logic Processor**: Backend service to translate visual logic into executable instructions. It will monitor bot triggers and manage transactions based on real-time data.
-  - **Execution Engine**: Service to execute trades and actions on-chain. Use WebSocket or Webhook for real-time responses and immediate execution.
-  - **Database Management**: Set up a persistent storage solution (e.g., Firebase, Supabase, or MongoDB) to store user configurations, bot parameters, and execution logs.
-  - **Security and Authentication**: Secure interactions between frontend and backend with wallet authentication and API keys for the backend services.
+### **Phase 2: Backend and Smart Contract Infrastructure**
 
+#### **1. Deliverables**
+
+- **Backend Setup**
+  - **Architecture**: Build a REST API in **Node.js** with **Express** to manage:
+    - **Strategy Storage**: Save user-defined bot strategies, configurations, and backtest data.
+    - **User Data**: Manage user profiles, permissions, and authentication states.
+    - **Bot Execution**: Enable bot scheduling, execution monitoring, and event logging.
+    - **Data Feeds**: Integrate real-time data feeds for price and asset updates across networks, storing important data for trading calculations.
+
+- **Smart Contract Integration**
+  - **EVM Chains**:
+    - **Contracts**: Create Solidity contracts for trade execution on **EVM DEXs** (e.g., Uniswap, SushiSwap).
+    - **Security Measures**: Set up contract modules for order routing, slippage control, and liquidity checking. Implement signature verification for wallet interactions.
+
+  - **Solana**:
+    - **Anchor Programs**: Deploy Rust programs using the **Anchor framework** for structured contract development. 
+    - **DEX Integrations**: Implement SPL-compatible programs that interact with Solana DEXs (e.g., Serum) to handle trades and liquidity pulls.
+
+- **Data Oracles**
+  - **Chainlink for EVM** and **Pyth Network for Solana** to access real-time, decentralized price data.
+  - **Backup Feeds**: Set up redundant oracle sources for price stability and fallbacks in case of oracle outages.
+
+---
+
+#### **2. Core Functionality**
+
+- **Bot Logic Processor**
+  - **Execution Logic**: Convert visual bot configurations into executable trading logic with specified triggers (e.g., price, volume, and market conditions).
+  - **Data Monitoring**: Continuously monitor data feeds and market conditions for each bot, activating trading instructions when conditions match triggers.
+  - **Error Handling**: Add logging, error capturing, and transaction rollbacks to manage failed or delayed executions effectively.
+
+- **Execution Engine**
+  - **Trade Executor**: Set up **WebSocket** or **Webhook** connections for immediate, low-latency trade execution on both EVM and Solana DEXs.
+  - **Network Specificity**: Design separate handlers for EVM and Solana networks, ensuring each handles transaction signing, execution, and network gas management optimally.
+
+- **Database Management**
+  - **Persistent Storage**: Use **Supabase** or **MongoDB** for scalable storage of user configurations, strategies, and historical data.
+  - **Data Indexing**: Optimize for quick data retrieval, with indexes on frequently accessed user and strategy data fields.
+  - **Logging**: Store execution logs, error reports, and other backend activities for auditing and debugging.
+
+- **Security and Authentication**
+  - **Wallet Authentication**: Use wallet signatures for secure user login and actions.
+  - **API Security**: Protect API endpoints with JWT tokens, access keys, and rate limiting to prevent abuse.
+  - **Backend Access Control**: Limit permissions for sensitive endpoints and include IP whitelisting for internal API calls.
+
+---
+
+This infrastructure in Phase 2 is structured to optimize reliability and scalability while securing user assets and data.
 #### **Phase 3: Strategy Execution and Real-Time Data Integration**
 
 - **Deliverables**:

@@ -20,7 +20,7 @@ export function SecuritySettings({ onChange }: SecuritySettingsProps) {
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm font-medium text-lightest">Two-Factor Authentication</Label>
-            <p className="text-xs text-light/60 mt-1">Add an extra layer of security</p>
+            <p className="text-xs text-lighter/70 mt-1">Add an extra layer of security</p>
           </div>
           <Switch onCheckedChange={onChange} />
         </div>
@@ -41,7 +41,7 @@ export function SecuritySettings({ onChange }: SecuritySettingsProps) {
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm font-medium text-lightest">Hardware Wallet Signing</Label>
-            <p className="text-xs text-light/60 mt-1">Require hardware wallet for trades</p>
+            <p className="text-xs text-lighter/70 mt-1">Require hardware wallet for trades</p>
           </div>
           <Switch onCheckedChange={onChange} defaultChecked />
         </div>
@@ -52,7 +52,7 @@ export function SecuritySettings({ onChange }: SecuritySettingsProps) {
         <h3 className="text-sm font-medium text-lightest">Trade Limits</h3>
         
         <div className="space-y-2">
-          <Label htmlFor="max-trade" className="text-light/60">Maximum Trade Size</Label>
+          <Label htmlFor="max-trade" className="text-lighter/70">Maximum Trade Size</Label>
           <Input
             id="max-trade"
             type="number"
@@ -66,7 +66,7 @@ export function SecuritySettings({ onChange }: SecuritySettingsProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="daily-limit" className="text-light/60">Daily Trading Limit</Label>
+          <Label htmlFor="daily-limit" className="text-lighter/70">Daily Trading Limit</Label>
           <Input
             id="daily-limit"
             type="number"
