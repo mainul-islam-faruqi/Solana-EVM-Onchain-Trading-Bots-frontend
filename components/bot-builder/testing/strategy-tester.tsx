@@ -12,9 +12,10 @@ import { PriceChart } from '@/components/price-chart/price-chart';
 
 interface StrategyTesterProps {
   strategy: BotStrategy;
+  selectedToken: string | null;
 }
 
-export function StrategyTester({ strategy }: StrategyTesterProps) {
+export function StrategyTester({ strategy, selectedToken }: StrategyTesterProps) {
   const [engine, setEngine] = React.useState<ExecutionEngine | null>(null);
   const [testResults, setTestResults] = React.useState<TestResult[]>([]);
   const [error, setError] = React.useState<string | null>(null);

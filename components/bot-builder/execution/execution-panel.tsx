@@ -15,19 +15,31 @@ import {
 } from 'lucide-react'
 import { COLORS } from '@/lib/constants/colors'
 import { ExecutionEngine } from './execution-engine'
-import { ExecutionState } from './types'
+// import { ExecutionState } from './types'
 import { BotStrategy } from '../types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { Program, AnchorProvider } from '@project-serum/anchor';
+import { DCAConfig, ExecutionState } from '../types';
+import { IDL } from '@/lib/solana/idl/trading_bot';
+import { PROGRAM_ID } from '@/lib/solana/program';
 
 interface ExecutionPanelProps {
   strategy: BotStrategy;
+  onExecutionStateChange?: (state: ExecutionState) => void;
 }
 
-export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
+export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPanelProps) {
   const { toast } = useToast();
+  const { connection } = useConnection();
+  const wallet = useWallet();
   const [engine, setEngine] = React.useState<ExecutionEngine | null>(null)
-  const [executionState, setExecutionState] = React.useState<ExecutionState | null>(null)
+  const [executionState, setExecutionState] = React.useState<ExecutionState>({
+    status: 'idle',
+    lastUpdate: new Date(),
+    errors: []
+  });
   const [metrics, setMetrics] = React.useState({
     profitLoss: 0,
     totalTrades: 0,
@@ -92,6 +104,48 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
       setExecutionState(engine.getExecutionState())
     }
   }
+
+  const handleExecuteDCA = async (dcaConfig: DCAConfig) => {
+    try {
+      setExecutionState({
+        status: 'running',
+        lastUpdate: new Date(),
+        errors: []
+      });
+
+      const provider = new AnchorProvider(connection, wallet, {});
+      const program = new Program(IDL, PROGRAM_ID, provider);
+
+      const tx = await program.methods
+        .setupDca(
+          dcaConfig.applicationIdx,
+          dcaConfig.inAmount,
+          dcaConfig.inAmountPerCycle,
+          dcaConfig.cycleFrequency,
+          dcaConfig.minOutAmount || null,
+          dcaConfig.maxOutAmount || null,
+          dcaConfig.startAt || null
+        )
+        .accounts({
+          jupDcaProgram: program.programId,
+          // Add other required accounts based on setup_dca.rs
+        })
+        .rpc();
+
+      setExecutionState({
+        status: 'success',
+        lastUpdate: new Date(),
+        errors: []
+      });
+
+    } catch (error: any) {
+      setExecutionState({
+        status: 'error',
+        lastUpdate: new Date(),
+        errors: [error.message]
+      });
+    }
+  };
 
   return (
     <Card className="border border-accent/20 bg-darker/50 backdrop-blur-sm">
@@ -198,6 +252,28 @@ export function ExecutionPanel({ strategy }: ExecutionPanelProps) {
           <div className="flex items-center gap-2 p-3 rounded-lg bg-error/10 border border-error/20">
             <AlertCircle className="h-5 w-5 text-error" />
             <span className="text-sm text-error">{executionState.error}</span>
+          </div>
+        )}
+
+        {/* Add DCA configuration inputs */}
+        <Button 
+          onClick={() => handleExecuteDCA(dcaConfig)}
+          disabled={executionState?.status === 'running'}
+        >
+          Start DCA
+        </Button>
+
+        {/* Status display */}
+        {executionState?.status === 'running' && (
+          <div>Executing DCA strategy...</div>
+        )}
+
+        {/* Error display */}
+        {executionState?.errors.length > 0 && (
+          <div className="text-error">
+            {executionState.errors.map((error, i) => (
+              <div key={i}>{error}</div>
+            ))}
           </div>
         )}
       </CardContent>

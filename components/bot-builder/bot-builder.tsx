@@ -15,7 +15,7 @@ import { AVAILABLE_BLOCKS, createBlock } from './block-registry'
 import { StrategyTester } from './testing/strategy-tester'
 import { StrategyTemplate } from '@/types/templates'
 import { useSearchParams, useRouter } from 'next/navigation';
-import { TemplateService } from '@/lib/services/template-service';
+// import { TemplateService } from '@/lib/services/template-service';
 import { Button } from '@/components/ui/button';
 import { useStrategyTemplate } from '@/hooks/useStrategyTemplate';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { PriceMonitoringPanel } from './price-monitoring/price-panel';
 import { AssetManagement } from '@/components/wallet/asset-management';
 import { TokenSelector } from '@/components/bot-builder/token-selector';
+import { DCAConfig, ExecutionState } from './types';
 
 
 export function BotBuilder() {
@@ -59,7 +60,17 @@ export function BotBuilder() {
   const blockLibraryRef = React.useRef<HTMLDivElement>(null);
   const [blockLibraryHeight, setBlockLibraryHeight] = React.useState<number>(0);
 
-  const [selectedToken, setSelectedToken] = React.useState<any>(null);
+  const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
+
+  const [dcaConfig, setDcaConfig] = React.useState<DCAConfig>({
+    applicationIdx: 0,
+    inAmount: 0,
+    inAmountPerCycle: 0,
+    cycleFrequency: 3600, // 1 hour default
+    minOutAmount: undefined,
+    maxOutAmount: undefined,
+    startAt: undefined
+  });
 
   // Update block library height on mount and resize
   React.useEffect(() => {
@@ -191,7 +202,7 @@ export function BotBuilder() {
     setSelectedBlock(block)
   }
 
-  const handleConfigChange = (blockId: string, newConfig: Record<string, any>) => {
+  const handleConfigChange = (blockId: string, newConfig: Record<string, unknown>) => {
     setStrategy(prev => ({
       ...prev,
       blocks: prev.blocks.map(block => 
@@ -316,6 +327,16 @@ export function BotBuilder() {
         tokenAddress: token.address,
         tokenSymbol: token.symbol
       });
+    }
+  };
+
+  const handleExecutionStateChange = (state: ExecutionState) => {
+    setExecutionStatus(state.status as 'error' | 'idle' | 'running' | 'paused');
+    if (state.errors.length > 0) {
+      setValidationErrors(state.errors.map(error => ({
+        type: 'general',
+        message: error
+      })));
     }
   };
 
@@ -555,7 +576,10 @@ export function BotBuilder() {
 
             {/* Execution Panel */}
             <div className="col-span-1">
-              <ExecutionPanel strategy={strategy} />
+              <ExecutionPanel 
+                strategy={strategy}
+                onExecutionStateChange={handleExecutionStateChange}
+              />
             </div>
           </div>
 

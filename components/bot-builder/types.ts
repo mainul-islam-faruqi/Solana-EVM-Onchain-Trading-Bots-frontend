@@ -97,4 +97,20 @@ export type ValidationError = {
 export type ValidationResult = {
   isValid: boolean;
   errors: ValidationError[];
+}
+
+export interface DCAConfig {
+  applicationIdx: number;
+  inAmount: number;
+  inAmountPerCycle: number;
+  cycleFrequency: number;
+  minOutAmount?: number;
+  maxOutAmount?: number;
+  startAt?: number;
+}
+
+export interface ExecutionState {
+  status: 'idle' | 'running' | 'success' | 'error';
+  lastUpdate: Date;
+  errors: string[];
 } 
