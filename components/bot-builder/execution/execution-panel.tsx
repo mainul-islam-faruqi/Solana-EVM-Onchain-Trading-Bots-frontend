@@ -20,17 +20,19 @@ import { BotStrategy } from '../types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider } from '@project-serum/anchor';
+import { Program, AnchorProvider, web3 } from '@coral-xyz/anchor';
 import { DCAConfig, ExecutionState } from '../types';
 import { IDL } from '@/lib/solana/idl/trading_bot';
 import { PROGRAM_ID } from '@/lib/solana/program';
+import { getAssociatedTokenAddress, getEscrowPDA } from '@/lib/solana/utils';
 
 interface ExecutionPanelProps {
   strategy: BotStrategy;
   onExecutionStateChange?: (state: ExecutionState) => void;
+  dcaConfig: DCAConfig;
 }
 
-export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPanelProps) {
+export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: ExecutionPanelProps) {
   const { toast } = useToast();
   const { connection } = useConnection();
   const wallet = useWallet();
@@ -105,15 +107,18 @@ export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPa
     }
   }
 
-  const handleExecuteDCA = async (dcaConfig: DCAConfig) => {
+  const handleExecuteDCA = async () => {
     try {
-      setExecutionState({
-        status: 'running',
-        lastUpdate: new Date(),
-        errors: []
-      });
+      if (!wallet.publicKey) throw new Error("Wallet not connected");
+      if (!dcaConfig.inputMint || !dcaConfig.outputMint) {
+        throw new Error("Please select input and output tokens");
+      }
 
-      const provider = new AnchorProvider(connection, wallet, {});
+      const provider = new AnchorProvider(
+        connection,
+        wallet,
+        AnchorProvider.defaultOptions()
+      );
       const program = new Program(IDL, PROGRAM_ID, provider);
 
       const tx = await program.methods
@@ -122,13 +127,37 @@ export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPa
           dcaConfig.inAmount,
           dcaConfig.inAmountPerCycle,
           dcaConfig.cycleFrequency,
-          dcaConfig.minOutAmount || null,
-          dcaConfig.maxOutAmount || null,
-          dcaConfig.startAt || null
+          dcaConfig.minOutAmount,
+          dcaConfig.maxOutAmount,
+          dcaConfig.startAt
         )
         .accounts({
-          jupDcaProgram: program.programId,
-          // Add other required accounts based on setup_dca.rs
+          jupDcaProgram: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
+          jupDca: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
+          inputMint: new web3.PublicKey(dcaConfig.inputMint),  // Input token mint
+          outputMint: new web3.PublicKey(dcaConfig.outputMint), // Output token mint
+          user: wallet.publicKey,
+          userTokenAccount: await getAssociatedTokenAddress(
+            new web3.PublicKey(dcaConfig.inputMint),
+            wallet.publicKey
+          ),
+          escrow: (await getEscrowPDA(
+            wallet.publicKey,
+            new web3.PublicKey(dcaConfig.inputMint),
+            new web3.PublicKey(dcaConfig.outputMint),
+            dcaConfig.applicationIdx
+          ))[0],
+          escrowInAta: await getAssociatedTokenAddress(
+            new web3.PublicKey(dcaConfig.inputMint),
+            escrowPDA
+          ),
+          escrowOutAta: await getAssociatedTokenAddress(
+            new web3.PublicKey(dcaConfig.outputMint),
+            escrowPDA
+          ),
+          systemProgram: web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc();
 
@@ -138,11 +167,23 @@ export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPa
         errors: []
       });
 
+      toast({
+        title: "DCA Setup Successful",
+        description: `Transaction ID: ${tx}`,
+        variant: "success",
+      });
+
     } catch (error: any) {
       setExecutionState({
         status: 'error',
         lastUpdate: new Date(),
         errors: [error.message]
+      });
+
+      toast({
+        title: "DCA Setup Failed",
+        description: error.message,
+        variant: "error",
       });
     }
   };
@@ -257,7 +298,7 @@ export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPa
 
         {/* Add DCA configuration inputs */}
         <Button 
-          onClick={() => handleExecuteDCA(dcaConfig)}
+          onClick={handleExecuteDCA}
           disabled={executionState?.status === 'running'}
         >
           Start DCA

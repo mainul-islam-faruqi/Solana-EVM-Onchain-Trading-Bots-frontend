@@ -15,7 +15,6 @@ import { AVAILABLE_BLOCKS, createBlock } from './block-registry'
 import { StrategyTester } from './testing/strategy-tester'
 import { StrategyTemplate } from '@/types/templates'
 import { useSearchParams, useRouter } from 'next/navigation';
-// import { TemplateService } from '@/lib/services/template-service';
 import { Button } from '@/components/ui/button';
 import { useStrategyTemplate } from '@/hooks/useStrategyTemplate';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +23,8 @@ import { PriceMonitoringPanel } from './price-monitoring/price-panel';
 import { AssetManagement } from '@/components/wallet/asset-management';
 import { TokenSelector } from '@/components/bot-builder/token-selector';
 import { DCAConfig, ExecutionState } from './types';
-
+import { PublicKey } from '@solana/web3.js';
+import { AVAILABLE_PAIRS, TokenInfo } from '@/lib/constants/token-pairs';
 
 export function BotBuilder() {
   const [strategy, setStrategy] = React.useState<BotStrategy>({
@@ -69,7 +69,9 @@ export function BotBuilder() {
     cycleFrequency: 3600, // 1 hour default
     minOutAmount: undefined,
     maxOutAmount: undefined,
-    startAt: undefined
+    startAt: undefined,
+    inputMint: '',   // Add inputMint
+    outputMint: ''   // Add outputMint
   });
 
   // Update block library height on mount and resize
@@ -318,16 +320,12 @@ export function BotBuilder() {
     setSelectedBlock(null);
   };
 
-  const handleTokenSelect = (token: any) => {
-    setSelectedToken(token);
-    // Update strategy config if needed
-    if (selectedBlock) {
-      handleConfigChange(selectedBlock.id, {
-        ...selectedBlock.config,
-        tokenAddress: token.address,
-        tokenSymbol: token.symbol
-      });
-    }
+  const handleTokenSelect = (inputToken: TokenInfo, outputToken: TokenInfo) => {
+    setDcaConfig(prev => ({
+      ...prev,
+      inputMint: inputToken.mint.toString(),
+      outputMint: outputToken.mint.toString()
+    }));
   };
 
   const handleExecutionStateChange = (state: ExecutionState) => {
@@ -579,6 +577,7 @@ export function BotBuilder() {
               <ExecutionPanel 
                 strategy={strategy}
                 onExecutionStateChange={handleExecutionStateChange}
+                dcaConfig={dcaConfig} // Pass the DCAConfig as a prop
               />
             </div>
           </div>

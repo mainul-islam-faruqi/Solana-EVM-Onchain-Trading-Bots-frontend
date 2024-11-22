@@ -107,6 +107,8 @@ export interface DCAConfig {
   minOutAmount?: number;
   maxOutAmount?: number;
   startAt?: number;
+  inputMint: string;   // Token pair: Input Token (e.g., USDC)
+  outputMint: string;  // Token pair: Output Token (e.g., SOL)
 }
 
 export interface ExecutionState {
