@@ -1,4 +1,81 @@
 import { BlockType, PriceTriggerBlock, TradeActionBlock, LogicBlock } from './types'
+import { TOKEN_MINTS } from '@/lib/solana/constants';
+
+// Define available DCA pairs
+const DCA_PAIRS = [
+  {
+    id: 'USDC-SOL',
+    name: 'USDC/SOL',
+    inputToken: {
+      symbol: 'USDC',
+      mint: TOKEN_MINTS.USDC,
+    },
+    outputToken: {
+      symbol: 'SOL',
+      mint: TOKEN_MINTS.SOL,
+    }
+  },
+  {
+    id: 'USDT-SOL',
+    name: 'USDT/SOL',
+    inputToken: {
+      symbol: 'USDT',
+      mint: TOKEN_MINTS.USDT,
+    },
+    outputToken: {
+      symbol: 'SOL',
+      mint: TOKEN_MINTS.SOL,
+    }
+  },
+  {
+    id: 'SOL-USDC',
+    name: 'SOL/USDC', 
+    inputToken: {
+      symbol: 'SOL',
+      mint: TOKEN_MINTS.SOL,
+    },
+    outputToken: {
+      symbol: 'USDC',
+      mint: TOKEN_MINTS.USDC,
+    }
+  },
+  {
+    id: 'USDC-BONK',
+    name: 'USDC/BONK',
+    inputToken: {
+      symbol: 'USDC', 
+      mint: TOKEN_MINTS.USDC,
+    },
+    outputToken: {
+      symbol: 'BONK',
+      mint: TOKEN_MINTS.BONK,
+    }
+  },
+  {
+    id: 'USDT-BONK',
+    name: 'USDT/BONK',
+    inputToken: {
+      symbol: 'USDT',
+      mint: TOKEN_MINTS.USDT, 
+    },
+    outputToken: {
+      symbol: 'BONK',
+      mint: TOKEN_MINTS.BONK,
+    }
+  },
+  {
+    id: 'BONK-SOL',
+    name: 'BONK/SOL',
+    inputToken: {
+      symbol: 'BONK',
+      mint: TOKEN_MINTS.BONK,
+    },
+    outputToken: {
+      symbol: 'SOL', 
+      mint: TOKEN_MINTS.SOL,
+    }
+  }
+];
 
 export const AVAILABLE_BLOCKS: BlockType[] = [
   {
@@ -326,6 +403,33 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       inputs: ['trigger', 'condition']
     },
     maxInputs: 1
+  },
+  {
+    id: 'dca',
+    type: 'dca',
+    label: 'DCA Strategy',
+    name: 'Dollar Cost Averaging',
+    config: {
+      tradingPair: '',
+      inputAmount: 0,
+      cycleFrequency: 3600,
+      minOutAmount: 0,
+      maxOutAmount: 0,
+      availablePairs: DCA_PAIRS
+    },
+    defaultConfig: {
+      tradingPair: '',
+      inputAmount: 0,
+      cycleFrequency: 3600,
+      minOutAmount: 0,
+      maxOutAmount: 0,
+      availablePairs: DCA_PAIRS
+    },
+    validationRules: {
+      tradingPair: { required: true },
+      inputAmount: { required: true, min: 0 },
+      cycleFrequency: { required: true, min: 60 },
+    }
   }
 ]
 
@@ -342,4 +446,7 @@ export function createBlock(type: string): BlockType | undefined {
     id: crypto.randomUUID(),
     config: { ...template.defaultConfig }
   }
-} 
+}
+
+// Export DCA pairs for use in other components
+export { DCA_PAIRS }; 

@@ -1,11 +1,14 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 import { BlockType, Position } from './types'
 import { Zap, DollarSign, Blocks, GripHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { TOKEN_MINTS } from '@/lib/solana/constants'
+import { TRADING_PAIRS } from '@/lib/constants/token-pairs'
+import { DCA_PAIRS } from './block-registry'
 
 interface BlockProps {
   block: BlockType;
@@ -15,7 +18,7 @@ interface BlockProps {
   onConnectionStart: () => void;
   onConnectionEnd: () => void;
   onPositionChange: (position: Position) => void;
-  onConfigChange: (blockId: string, config: Record<string, any>) => void;
+  onConfigChange: (blockId: string, config: Record<string, unknown>) => void;
 }
 
 export function Block({ 
@@ -30,107 +33,139 @@ export function Block({
 }: BlockProps) {
   const [isDragging, setIsDragging] = React.useState(false)
   const [dragOffset, setDragOffset] = React.useState<Position>({ x: 0, y: 0 })
-  const [localConfig, setLocalConfig] = React.useState(block.config)
+  const [localConfig, setLocalConfig] = useState(block.config)
 
-  React.useEffect(() => {
-    if (JSON.stringify(localConfig) !== JSON.stringify(block.config)) {
-      setLocalConfig(block.config);
-    }
-  }, [block.config]);
+  useEffect(() => {
+    setLocalConfig(block.config)
+  }, [block.config])
 
-  const handleConfigChange = (key: string, value: any) => {
+  const handleConfigChange = (key: string, value: unknown) => {
     const newConfig = {
       ...localConfig,
       [key]: value
-    };
-    setLocalConfig(newConfig);
-    
-    onConfigChange(block.id, newConfig);
-  };
+    }
+    setLocalConfig(newConfig)
+    onConfigChange(block.id, newConfig)
+  }
 
-  const renderConfigInput = (key: string, value: any) => {
+  const renderDcaConfig = () => {
+    if (block.type !== 'dca') return null
+
+    return (
+      <div className="space-y-2 mb-4">
+        <div>
+          <label className="text-xs text-lighter">Trading Pair</label>
+          <Select
+            value={localConfig.tradingPair as string}
+            onValueChange={(pairId) => {
+              const selectedPair = DCA_PAIRS.find(p => p.id === pairId)
+              if (selectedPair) {
+                handleConfigChange('tradingPair', pairId)
+                handleConfigChange('inputToken', selectedPair.inputToken.mint.toString())
+                handleConfigChange('outputToken', selectedPair.outputToken.mint.toString())
+                handleConfigChange('inputSymbol', selectedPair.inputToken.symbol)
+                handleConfigChange('outputSymbol', selectedPair.outputToken.symbol)
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select trading pair" />
+            </SelectTrigger>
+            <SelectContent>
+              {DCA_PAIRS.map((pair) => (
+                <SelectItem key={pair.id} value={pair.id}>
+                  {pair.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Show selected pair info */}
+        {localConfig.tradingPair && (
+          <div className="text-xs text-lighter/70 px-2">
+            Trading {localConfig.inputSymbol} → {localConfig.outputSymbol}
+          </div>
+        )}
+
+        {/* Other DCA specific inputs */}
+        <div>
+          <label className="text-xs text-lighter">Amount per cycle</label>
+          <input
+            type="number"
+            value={localConfig.inAmountPerCycle || 0}
+            onChange={(e) => handleConfigChange('inAmountPerCycle', parseFloat(e.target.value))}
+            className="w-full h-8 text-xs bg-darker/50 border border-accent/20 rounded px-2"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-lighter">Cycle Frequency (seconds)</label>
+          <input
+            type="number"
+            value={localConfig.cycleFrequency || 3600}
+            onChange={(e) => handleConfigChange('cycleFrequency', parseFloat(e.target.value))}
+            className="w-full h-8 text-xs bg-darker/50 border border-accent/20 rounded px-2"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const renderConfigInput = (key: string, value: unknown) => {
+    if (key === 'inputToken' || key === 'outputToken') {
+      return null
+    }
+
     const commonClasses = cn(
       "bg-darker border-darker/60 text-light text-sm",
       "focus:border-accent/40 focus:ring-2 focus:ring-accent/20",
-      "focus:outline-none",
-      "hover:border-accent/30 transition-all duration-200",
-      "placeholder-accent/30",
-      "shadow-sm shadow-black/10",
-      "focus-within:shadow-accent/5"
+      "rounded px-2 py-1 w-full"
     )
 
-    if (key === 'amount' || key === 'price' || key === 'stopPrice') {
-      return (
-        <Input
-          type="number"
-          value={value}
-          onChange={(e) => handleConfigChange(key, parseFloat(e.target.value) || 0)}
-          className={cn(
-            commonClasses, 
-            "h-6 w-24",
-            "focus-visible:ring-offset-1",
-            "focus-visible:ring-accent/30"
-          )}
-          step="0.000001"
-          min="0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-        />
-      )
-    }
-
-    if (key === 'condition') {
+    if (key === 'pair') {
       return (
         <Select
-          value={value}
-          onValueChange={(v) => handleConfigChange(key, v)}
-          onOpenChange={() => onClick()}
-          
+          value={value as string}
+          onValueChange={(newValue) => handleConfigChange(key, newValue)}
         >
-          <SelectTrigger 
-            className={cn(
-              commonClasses,
-              "h-6 w-24",
-              "hover:bg-darker/80",
-              "data-[state=open]:bg-darker/90",
-              "focus:ring-offset-1",
-              "focus-visible:ring-accent/30"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SelectValue>{value}</SelectValue>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Select pair" />
           </SelectTrigger>
-          <SelectContent className="bg-darker border-darker/60">
-            <SelectItem 
-              value="above"
-              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
-            >
-              Above
-            </SelectItem>
-            <SelectItem 
-              value="below"
-              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
-            >
-              Below
-            </SelectItem>
-            <SelectItem 
-              value="equals"
-              className="text-light hover:bg-accent/5 focus:bg-accent/10 focus:text-light/90"
-            >
-              Equals
-            </SelectItem>
+          <SelectContent>
+            {DCA_PAIRS.map((pair) => (
+              <SelectItem key={pair.id} value={pair.id}>
+                {pair.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       )
     }
 
-    return (
-      <span className="font-medium text-light">
-        {value != null ? value.toString() : '-'}
-      </span>
-    )
+    if (typeof value === 'number') {
+      return (
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => handleConfigChange(key, parseFloat(e.target.value))}
+          className={commonClasses}
+        />
+      )
+    }
+
+    if (typeof value === 'string') {
+      return (
+        <Input
+          type="text"
+          value={value}
+          onChange={(e) => handleConfigChange(key, e.target.value)}
+          className={commonClasses}
+        />
+      )
+    }
+
+    return null
   }
 
   const getBlockIcon = () => {

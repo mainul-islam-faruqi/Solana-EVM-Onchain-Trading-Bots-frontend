@@ -15,7 +15,8 @@ import { cn } from '@/lib/utils';
 import { useWalletConnection } from '@/hooks/useWalletConnection';
 import { usePriceData } from '@/hooks/usePriceData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AVAILABLE_PAIRS, TokenInfo } from '@/lib/constants/token-pairs';
+import { TOKEN_MINTS } from '@/lib/solana/constants';
+import { TokenInfo } from '@/lib/constants/token-pairs';
 
 interface TokenSelectorProps {
   onSelect: (inputToken: TokenInfo, outputToken: TokenInfo) => void;
@@ -24,6 +25,38 @@ interface TokenSelectorProps {
 }
 
 export function TokenSelector({ onSelect, selectedInputToken, selectedOutputToken }: TokenSelectorProps) {
+  // Define available token pairs
+  const AVAILABLE_PAIRS = [
+    {
+      inputToken: {
+        symbol: 'USDC',
+        name: 'USD Coin',
+        mint: TOKEN_MINTS.USDC,
+        decimals: 6
+      },
+      outputToken: {
+        symbol: 'SOL',
+        name: 'Solana',
+        mint: TOKEN_MINTS.SOL,
+        decimals: 9
+      }
+    },
+    {
+      inputToken: {
+        symbol: 'USDT',
+        name: 'Tether USD',
+        mint: TOKEN_MINTS.USDT,
+        decimals: 6
+      },
+      outputToken: {
+        symbol: 'SOL',
+        name: 'Solana',
+        mint: TOKEN_MINTS.SOL,
+        decimals: 9
+      }
+    }
+  ];
+
   return (
     <div className="space-y-4">
       <div>
