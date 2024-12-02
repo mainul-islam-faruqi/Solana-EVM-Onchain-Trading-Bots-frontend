@@ -1,27 +1,36 @@
-import { BotStrategy } from '../types'
+import { PublicKey } from '@solana/web3.js';
 
-export type ExecutionContext = {
-  strategy: BotStrategy;
-  marketData: MarketData;
-  walletBalance: WalletBalance;
-  executionState: ExecutionState;
+export interface BotStrategy {
+  id: string;
+  name: string;
+  blocks: any[]; // Replace with proper block type
+  connections: any[]; // Replace with proper connection type
 }
 
-export type MarketData = {
-  price: number;
-  timestamp: number;
-  volume24h: number;
-  priceChange24h: number;
+export interface DCAConfig {
+  applicationIdx: number;
+  inAmount: number;
+  inAmountPerCycle: number;
+  cycleFrequency: number;
+  minOutAmount?: number;
+  maxOutAmount?: number;
+  startAt?: number;
+  inputMint: string;
+  outputMint: string;
 }
 
-export type WalletBalance = {
-  [token: string]: {
-    amount: number;
-    value: number;
-  }
+export interface ExecutionState {
+  status: 'idle' | 'running' | 'paused' | 'error';
+  lastUpdate: Date;
+  errors: string[];
+  currentBlock?: string;
+  gasPrice?: number;
+  networkStatus?: {
+    chainId: number;
+    blockNumber: number;
+    timestamp: number;
+  };
 }
-
-export type ExecutionStatus = 'idle' | 'running' | 'paused' | 'error';
 
 export interface ExecutionMetrics {
   profitLoss: number;
@@ -36,39 +45,17 @@ export interface ExecutionMetrics {
   totalVolume?: number;
 }
 
-export interface ExecutionState {
-  status: ExecutionStatus;
-  errors: string[];
-  lastUpdate: number;
-  currentBlock?: string;
-  nextExecution?: number;
-  gasPrice?: number;
-  networkStatus?: {
-    chainId: number;
-    blockNumber: number;
-    timestamp: number;
-  };
-}
-
 export interface TradeResult {
-  success: boolean;
-  txHash?: string;
-  error?: string;
-  gasUsed: number;
   timestamp: number;
-  price: number;
-  amount: number;
-  type: 'buy' | 'sell';
+  success: boolean;
+  profitLoss?: number;
+  gasUsed: number;
+  error?: string;
 }
 
 export interface BlockExecutionResult {
   success: boolean;
   error?: string;
-  output?: any;
   gasUsed: number;
-}
-
-export interface BlockExecutor {
-  execute(context: ExecutionContext): Promise<void>;
-  validate(context: ExecutionContext): Promise<boolean>;
+  output?: any; // Replace with proper output type
 } 

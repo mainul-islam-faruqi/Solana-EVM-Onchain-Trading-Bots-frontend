@@ -13,18 +13,20 @@ import {
   Clock,
   Activity
 } from 'lucide-react'
-import { COLORS } from '@/lib/constants/colors'
 import { ExecutionEngine } from './execution-engine'
-// import { ExecutionState } from './types'
 import { BotStrategy } from '../types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider, web3 } from '@coral-xyz/anchor';
-import { DCAConfig, ExecutionState } from '../types';
-import { IDL } from '@/lib/solana/idl/trading_bot';
-import { PROGRAM_ID } from '@/lib/solana/program';
-import { getAssociatedTokenAddress, getEscrowPDA } from '@/lib/solana/utils';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { Program, AnchorProvider, web3, IdlAccounts } from '@coral-xyz/anchor'
+import { DCAConfig, ExecutionState } from '../types'
+import { IDL, TradingBotIDL } from '@/lib/solana/idl/trading_bot'
+import { PROGRAM_ID } from '@/lib/solana/program'
+import { getAssociatedTokenAddress, getEscrowPDA } from '@/lib/solana/utils'
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+
+// Update the program type
+type TradingBotProgram = Program<TradingBotIDL>;
 
 interface ExecutionPanelProps {
   strategy: BotStrategy;
@@ -114,12 +116,27 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
         throw new Error("Please select input and output tokens");
       }
 
+      // Get escrow PDA first
+      const [escrowPDA] = await getEscrowPDA(
+        wallet.publicKey,
+        new web3.PublicKey(dcaConfig.inputMint),
+        new web3.PublicKey(dcaConfig.outputMint),
+        dcaConfig.applicationIdx
+      );
+
+      // Create provider with proper wallet adapter type
       const provider = new AnchorProvider(
         connection,
-        wallet,
+        {
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction!,
+          signAllTransactions: wallet.signAllTransactions!,
+        },
         AnchorProvider.defaultOptions()
       );
-      const program = new Program(IDL, PROGRAM_ID, provider);
+
+      // Initialize program with proper IDL type
+      const program = new Program(IDL, PROGRAM_ID, provider) as TradingBotProgram;
 
       const tx = await program.methods
         .setupDca(
@@ -134,19 +151,14 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
         .accounts({
           jupDcaProgram: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
           jupDca: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
-          inputMint: new web3.PublicKey(dcaConfig.inputMint),  // Input token mint
-          outputMint: new web3.PublicKey(dcaConfig.outputMint), // Output token mint
+          inputMint: new web3.PublicKey(dcaConfig.inputMint),
+          outputMint: new web3.PublicKey(dcaConfig.outputMint),
           user: wallet.publicKey,
           userTokenAccount: await getAssociatedTokenAddress(
             new web3.PublicKey(dcaConfig.inputMint),
             wallet.publicKey
           ),
-          escrow: (await getEscrowPDA(
-            wallet.publicKey,
-            new web3.PublicKey(dcaConfig.inputMint),
-            new web3.PublicKey(dcaConfig.outputMint),
-            dcaConfig.applicationIdx
-          ))[0],
+          escrow: escrowPDA,
           escrowInAta: await getAssociatedTokenAddress(
             new web3.PublicKey(dcaConfig.inputMint),
             escrowPDA
@@ -161,6 +173,14 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
         })
         .rpc();
 
+      if (onExecutionStateChange) {
+        onExecutionStateChange({
+          status: 'success',
+          lastUpdate: new Date(),
+          errors: []
+        });
+      }
+
       setExecutionState({
         status: 'success',
         lastUpdate: new Date(),
@@ -173,16 +193,18 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
         variant: "success",
       });
 
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
       setExecutionState({
         status: 'error',
         lastUpdate: new Date(),
-        errors: [error.message]
+        errors: [errorMessage]
       });
 
       toast({
         title: "DCA Setup Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "error",
       });
     }
@@ -299,21 +321,22 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
         {/* Add DCA configuration inputs */}
         <Button 
           onClick={handleExecuteDCA}
-          disabled={executionState?.status === 'running'}
+          disabled={executionState?.status === 'running' || !wallet.connected}
+          className="w-full"
         >
-          Start DCA
+          {wallet.connected ? 'Start DCA' : 'Connect Wallet to Start DCA'}
         </Button>
 
         {/* Status display */}
         {executionState?.status === 'running' && (
-          <div>Executing DCA strategy...</div>
+          <div className="text-sm text-lighter">Executing DCA strategy...</div>
         )}
 
         {/* Error display */}
         {executionState?.errors.length > 0 && (
-          <div className="text-error">
-            {executionState.errors.map((error, i) => (
-              <div key={i}>{error}</div>
+          <div className="text-error space-y-1">
+            {executionState.errors.map((error: string, i: number) => (
+              <div key={i} className="text-sm">{error}</div>
             ))}
           </div>
         )}
