@@ -1,10 +1,22 @@
 import { PublicKey } from '@solana/web3.js';
 
+export interface Block {
+  id: string;
+  type: string;
+  config: Record<string, unknown>;
+}
+
+export interface Connection {
+  id: string;
+  sourceId: string;
+  targetId: string;
+}
+
 export interface BotStrategy {
   id: string;
   name: string;
-  blocks: any[]; // Replace with proper block type
-  connections: any[]; // Replace with proper connection type
+  blocks: Block[];
+  connections: Connection[];
 }
 
 export interface DCAConfig {
@@ -21,7 +33,7 @@ export interface DCAConfig {
 
 export interface ExecutionState {
   status: 'idle' | 'running' | 'paused' | 'error';
-  lastUpdate: Date;
+  lastUpdate: number;
   errors: string[];
   currentBlock?: string;
   gasPrice?: number;
@@ -57,5 +69,5 @@ export interface BlockExecutionResult {
   success: boolean;
   error?: string;
   gasUsed: number;
-  output?: any; // Replace with proper output type
+  output?: Record<string, unknown>;
 } 

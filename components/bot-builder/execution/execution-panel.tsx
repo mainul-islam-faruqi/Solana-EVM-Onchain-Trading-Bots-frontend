@@ -14,12 +14,11 @@ import {
   Activity
 } from 'lucide-react'
 import { ExecutionEngine } from './execution-engine'
-import { BotStrategy } from '../types'
+import { BotStrategy, DCAConfig, ExecutionState } from './types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { Program, AnchorProvider, web3, IdlAccounts } from '@coral-xyz/anchor'
-import { DCAConfig, ExecutionState } from '../types'
+import { Program, AnchorProvider, web3 } from '@coral-xyz/anchor'
 import { IDL, TradingBotIDL } from '@/lib/solana/idl/trading_bot'
 import { PROGRAM_ID } from '@/lib/solana/program'
 import { getAssociatedTokenAddress, getEscrowPDA } from '@/lib/solana/utils'
@@ -136,7 +135,7 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
       );
 
       // Initialize program with proper IDL type
-      const program = new Program(IDL, PROGRAM_ID, provider) as TradingBotProgram;
+      const program = new Program(IDL, PROGRAM_ID, provider) as unknown as TradingBotProgram;
 
       const tx = await program.methods
         .setupDca(

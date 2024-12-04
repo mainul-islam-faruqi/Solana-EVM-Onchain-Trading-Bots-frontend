@@ -5,12 +5,12 @@ import { useWalletConnection } from '@/hooks/useWalletConnection';
 import { useChain } from '@/contexts/ChainContext';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletReadyState } from '@solana/wallet-adapter-base';
 import { Wallet, ChevronDown, ExternalLink, Power, Copy, CheckCircle2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -18,17 +18,25 @@ import { formatAddress } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useNetwork, useSwitchNetwork, useDisconnect } from 'wagmi';
 import { mainnet, polygon } from 'wagmi/chains';
-import { useWallet } from '@solana/wallet-adapter-react';
-import React from 'react';
 
 export function WalletConnection() {
-  const { isConnected, currentWallet, walletState } = useWalletConnection();
+  const { isConnected, currentWallet } = useWalletConnection();
   const { selectedChain, setSelectedChain } = useChain();
   const { openConnectModal: openEvmModal } = useConnectModal();
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork();
   const { disconnect: disconnectEvm } = useDisconnect();
-  const { disconnect: disconnectSolana } = useWallet();
+  
+  // Solana wallet states
+  const { 
+    wallets,
+    select,
+    publicKey,
+    disconnect: disconnectSolana,
+    connected: solanaConnected,
+    wallet: selectedWallet,
+    connect
+  } = useWallet();
   
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -59,6 +67,133 @@ export function WalletConnection() {
     handleNetworkSwitch();
   }, [isConnected, selectedNetwork, chain?.id, switchNetwork]);
 
+  const handleNetworkSwitch = async (chainId: number) => {
+    try {
+      setSelectedNetwork(chainId);
+      setSelectedChain('EVM');
+      await switchNetwork?.(chainId);
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+      setSelectedNetwork(chain?.id || null);
+    }
+  };
+
+  const handleSolanaWalletSelect = async (walletName: string) => {
+    const wallet = wallets.find(w => w.adapter.name === walletName);
+    if (wallet) {
+      try {
+        select(wallet.adapter.name);
+        await connect();
+      } catch (error) {
+        console.error('Failed to connect to wallet:', error);
+      }
+    }
+  };
+
+  const handleDisconnect = () => {
+    if (selectedChain === 'EVM') {
+      disconnectEvm();
+    } else {
+      disconnectSolana();
+    }
+    setOpen(false);
+  };
+
+  const handleCopyAddress = () => {
+    let address = '';
+    if (selectedChain === 'EVM' && currentWallet?.address) {
+      address = currentWallet.address;
+    } else if (selectedChain === 'SOLANA' && publicKey) {
+      address = publicKey.toBase58();
+    }
+
+    if (address) {
+      navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleViewExplorer = () => {
+    let address = '';
+    let explorerUrl = '';
+    
+    if (selectedChain === 'EVM' && currentWallet?.address) {
+      address = currentWallet.address;
+      if (chain?.id === polygon.id) {
+        explorerUrl = `https://polygonscan.com/address/${address}`;
+      } else {
+        explorerUrl = `https://etherscan.io/address/${address}`;
+      }
+    } else if (selectedChain === 'SOLANA' && publicKey) {
+      address = publicKey.toBase58();
+      explorerUrl = `https://solscan.io/account/${address}?cluster=devnet`;
+    }
+    
+    if (explorerUrl) {
+      window.open(explorerUrl, '_blank');
+    }
+  };
+
+  const renderWalletOptions = () => {
+    if (selectedChain === 'SOLANA') {
+      return (
+        <div className="p-2 space-y-2">
+          {wallets.map((wallet) => {
+            const ready = wallet.adapter.readyState === WalletReadyState.Installed ||
+                         wallet.adapter.readyState === WalletReadyState.Loadable;
+            const selected = selectedWallet?.adapter.name === wallet.adapter.name;
+            
+            return (
+              <Button
+                key={wallet.adapter.name}
+                variant={selected ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-2",
+                  !ready && "opacity-50 cursor-not-allowed"
+                )}
+                onClick={() => ready && handleSolanaWalletSelect(wallet.adapter.name)}
+                disabled={!ready}
+              >
+                {wallet.adapter.icon && (
+                  <img 
+                    src={wallet.adapter.icon} 
+                    alt={`${wallet.adapter.name} icon`}
+                    className="w-5 h-5"
+                  />
+                )}
+                {wallet.adapter.name}
+                {!ready && " (Not Installed)"}
+              </Button>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        className={cn(
+          "w-full justify-center",
+          "bg-gradient-to-r",
+          selectedNetwork === polygon.id
+            ? "from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+            : "from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600",
+          "text-white font-medium",
+          "shadow-lg",
+          selectedNetwork === polygon.id
+            ? "shadow-purple-500/20 hover:shadow-purple-500/30"
+            : "shadow-violet-500/20 hover:shadow-violet-500/30",
+          "hover:shadow-xl",
+          "transition-all duration-200"
+        )}
+        onClick={openEvmModal}
+      >
+        Connect to {selectedNetwork === polygon.id ? 'Polygon' : 'Ethereum'}
+      </Button>
+    );
+  };
+
   if (!mounted) {
     return (
       <Button 
@@ -80,79 +215,16 @@ export function WalletConnection() {
     );
   }
 
-  const handleNetworkSwitch = async (chainId: number) => {
-    try {
-      setSelectedNetwork(chainId);
-      setSelectedChain('EVM');
-      await switchNetwork?.(chainId);
-    } catch (error) {
-      console.error('Failed to switch network:', error);
-      setSelectedNetwork(chain?.id || null);
-    }
-  };
-
-  const isNetworkActive = (chainId: number) => {
-    return selectedChain === 'EVM' && selectedNetwork === chainId;
-  };
-
-  const handleCopyAddress = () => {
-    if (currentWallet?.address) {
-      navigator.clipboard.writeText(currentWallet.address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleViewExplorer = () => {
-    if (!currentWallet?.address) return;
-    let explorerUrl = '';
-    
-    if (selectedChain === 'EVM') {
-      if (chain?.id === polygon.id) {
-        explorerUrl = `https://polygonscan.com/address/${currentWallet.address}`;
-      } else {
-        explorerUrl = `https://etherscan.io/address/${currentWallet.address}`;
-      }
-    } else {
-      explorerUrl = `https://solscan.io/account/${currentWallet.address}`;
-    }
-    
-    window.open(explorerUrl, '_blank');
-  };
-
-  const handleDisconnect = () => {
-    if (selectedChain === 'EVM') {
-      disconnectEvm();
-    } else {
-      disconnectSolana();
-    }
-    setOpen(false);
-  };
-
-  const handleEvmConnect = async () => {
-    try {
-      openEvmModal?.();
-      setOpen(false);
-    } catch (error) {
-      console.error('Failed to connect:', error);
-    }
-  };
-
-  const getConnectButtonText = () => {
-    if (selectedChain === 'EVM') {
-      if (selectedNetwork === polygon.id) {
-        return 'Connect to Polygon';
-      }
-      return 'Connect to Ethereum';
-    }
-    return 'Connect Solana Wallet';
-  };
+  const isWalletConnected = selectedChain === 'EVM' ? isConnected : solanaConnected;
+  const walletAddress = selectedChain === 'EVM' 
+    ? currentWallet?.address 
+    : publicKey?.toBase58();
 
   return (
     <div className="relative z-50">
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
-          <Button 
+          <Button
             variant="secondary"
             size="sm"
             className={cn(
@@ -165,26 +237,13 @@ export function WalletConnection() {
               "hover:border-violet-300/50",
               "shadow-[0_2px_10px] shadow-violet-500/10",
               "hover:shadow-[0_4px_20px] hover:shadow-violet-500/20",
-              "before:absolute before:inset-0",
-              "before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent",
-              "before:translate-x-[-200%] hover:before:translate-x-[200%]",
-              "before:transition-transform before:duration-700",
               "group"
             )}
           >
-            <Wallet className={cn(
-              "h-4 w-4 text-violet-500",
-              "transition-colors duration-200",
-              "group-hover:text-violet-400"
-            )} />
-            <span className={cn(
-              "hidden sm:inline",
-              "text-violet-100 font-medium",
-              "transition-colors duration-200",
-              "group-hover:text-violet-100"
-            )}>
-              {isConnected 
-                ? formatAddress(currentWallet?.address || '', 4)
+            <Wallet className="h-4 w-4 text-violet-500 group-hover:text-violet-400" />
+            <span className="hidden sm:inline text-violet-100 font-medium group-hover:text-violet-100">
+              {isWalletConnected 
+                ? formatAddress(walletAddress || '', 4)
                 : 'Connect Wallet'
               }
             </span>
@@ -206,17 +265,7 @@ export function WalletConnection() {
             "bg-white/95 backdrop-blur-sm",
             "rounded-xl",
             "border border-violet-100",
-            "shadow-lg shadow-violet-500/10",
-            "data-[state=open]:animate-in",
-            "data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0",
-            "data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95",
-            "data-[state=open]:zoom-in-95",
-            "data-[side=bottom]:slide-in-from-top-2",
-            "data-[side=left]:slide-in-from-right-2",
-            "data-[side=right]:slide-in-from-left-2",
-            "data-[side=top]:slide-in-from-bottom-2"
+            "shadow-lg shadow-violet-500/10"
           )}
         >
           {/* Network Selection */}
@@ -225,64 +274,24 @@ export function WalletConnection() {
             <div className="grid grid-cols-3 gap-1 p-1 bg-gray-50/50 rounded-lg backdrop-blur-sm">
               <Button
                 size="sm"
-                variant={isNetworkActive(mainnet.id) ? 'default' : 'ghost'}
+                variant={selectedNetwork === mainnet.id ? 'default' : 'ghost'}
                 onClick={() => handleNetworkSwitch(mainnet.id)}
                 className={cn(
-                  "relative overflow-hidden",
-                  "text-sm font-medium",
-                  "transition-all duration-300",
-                  isNetworkActive(mainnet.id)
-                    ? [
-                        "bg-gradient-to-r from-violet-500 to-purple-500",
-                        "text-white shadow-lg shadow-violet-500/25",
-                        "border border-violet-400/50",
-                        "hover:shadow-xl hover:shadow-violet-500/30",
-                        "hover:from-violet-600 hover:to-purple-600",
-                        "before:absolute before:inset-0",
-                        "before:bg-gradient-to-r before:from-white/0 before:via-white/10 before:to-white/0",
-                        "before:translate-x-[-200%]",
-                        "hover:before:translate-x-[200%]",
-                        "before:transition-transform before:duration-700",
-                      ]
-                    : [
-                        "text-violet-700 bg-transparent",
-                        "hover:bg-gradient-to-r hover:from-violet-50 hover:to-purple-50",
-                        "hover:text-violet-700 hover:shadow-md hover:shadow-violet-500/10",
-                        "active:from-violet-100 active:to-purple-100",
-                        "border border-transparent hover:border-violet-200/50",
-                      ]
+                  "text-sm",
+                  selectedNetwork === mainnet.id ? "text-white" : "text-gray-700",
+                  "hover:text-white active:text-white"
                 )}
               >
                 Ethereum
               </Button>
               <Button
                 size="sm"
-                variant={isNetworkActive(polygon.id) ? 'default' : 'ghost'}
+                variant={selectedNetwork === polygon.id ? 'default' : 'ghost'}
                 onClick={() => handleNetworkSwitch(polygon.id)}
                 className={cn(
-                  "relative overflow-hidden",
-                  "text-sm font-medium",
-                  "transition-all duration-300",
-                  isNetworkActive(polygon.id)
-                    ? [
-                        "bg-gradient-to-r from-purple-500 to-indigo-500",
-                        "text-white shadow-lg shadow-purple-500/25",
-                        "border border-purple-400/50",
-                        "hover:shadow-xl hover:shadow-purple-500/30",
-                        "hover:from-purple-600 hover:to-indigo-600",
-                        "before:absolute before:inset-0",
-                        "before:bg-gradient-to-r before:from-white/0 before:via-white/10 before:to-white/0",
-                        "before:translate-x-[-200%]",
-                        "hover:before:translate-x-[200%]",
-                        "before:transition-transform before:duration-700",
-                      ]
-                    : [
-                        "text-purple-700 bg-transparent",
-                        "hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50",
-                        "hover:text-purple-700 hover:shadow-md hover:shadow-purple-500/10",
-                        "active:from-purple-100 active:to-indigo-100",
-                        "border border-transparent hover:border-purple-200/50",
-                      ]
+                  "text-sm",
+                  selectedNetwork === polygon.id ? "text-white" : "text-gray-700",
+                  "hover:text-white active:text-white"
                 )}
               >
                 Polygon
@@ -290,31 +299,14 @@ export function WalletConnection() {
               <Button
                 size="sm"
                 variant={selectedChain === 'SOLANA' ? 'default' : 'ghost'}
-                onClick={() => setSelectedChain('SOLANA')}
+                onClick={() => {
+                  setSelectedChain('SOLANA')
+                  setSelectedNetwork(null)
+                }}
                 className={cn(
-                  "relative overflow-hidden",
-                  "text-sm font-medium",
-                  "transition-all duration-300",
-                  selectedChain === 'SOLANA'
-                    ? [
-                        "bg-gradient-to-r from-orange-500 to-red-500",
-                        "text-white shadow-lg shadow-orange-500/25",
-                        "border border-orange-400/50",
-                        "hover:shadow-xl hover:shadow-orange-500/30",
-                        "hover:from-orange-600 hover:to-red-600",
-                        "before:absolute before:inset-0",
-                        "before:bg-gradient-to-r before:from-white/0 before:via-white/10 before:to-white/0",
-                        "before:translate-x-[-200%]",
-                        "hover:before:translate-x-[200%]",
-                        "before:transition-transform before:duration-700",
-                      ]
-                    : [
-                        "text-orange-700 bg-transparent",
-                        "hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50",
-                        "hover:text-orange-700 hover:shadow-md hover:shadow-orange-500/10",
-                        "active:from-orange-100 active:to-red-100",
-                        "border border-transparent hover:border-orange-200/50",
-                      ]
+                  "text-sm",
+                  selectedChain === 'SOLANA' ? "text-white" : "text-gray-700",
+                  "hover:text-white active:text-white"
                 )}
               >
                 Solana
@@ -325,13 +317,9 @@ export function WalletConnection() {
           <DropdownMenuSeparator className="my-2 bg-violet-100/50" />
 
           {/* Connection Status & Actions */}
-          {isConnected ? (
+          {isWalletConnected ? (
             <>
-              <div className={cn(
-                "px-3 py-2 mx-2 rounded-lg",
-                "bg-gradient-to-r from-gray-50/50 to-gray-100/50",
-                "backdrop-blur-sm border border-violet-100/20"
-              )}>
+              <div className="px-3 py-2 mx-2 rounded-lg bg-gray-50/50 backdrop-blur-sm border border-violet-100/20">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-xs font-medium text-gray-500">CONNECTED TO</div>
                   <div className="flex items-center gap-1">
@@ -347,25 +335,15 @@ export function WalletConnection() {
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-900 mb-1">
-                  {formatAddress(currentWallet?.address || '', 8)}
+                  {formatAddress(walletAddress || '', 8)}
                 </div>
-                {currentWallet?.balance && (
-                  <div className="text-sm text-gray-600">
-                    {currentWallet.balance} {currentWallet.network}
-                  </div>
-                )}
               </div>
 
               <div className="p-1.5 grid grid-cols-2 gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "flex items-center gap-2",
-                    "text-gray-600 hover:text-violet-700",
-                    "hover:bg-violet-50/50",
-                    "transition-all duration-200"
-                  )}
+                  className="flex items-center gap-2"
                   onClick={handleCopyAddress}
                 >
                   {copied ? 
@@ -377,12 +355,7 @@ export function WalletConnection() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "flex items-center gap-2",
-                    "text-gray-600 hover:text-violet-700",
-                    "hover:bg-violet-50/50",
-                    "transition-all duration-200"
-                  )}
+                  className="flex items-center gap-2"
                   onClick={handleViewExplorer}
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -396,12 +369,7 @@ export function WalletConnection() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  className={cn(
-                    "w-full flex items-center gap-2 justify-center",
-                    "bg-red-50 text-red-600 border border-red-200",
-                    "hover:bg-red-500 hover:text-white",
-                    "transition-all duration-200"
-                  )}
+                  className="w-full flex items-center gap-2 justify-center"
                   onClick={handleDisconnect}
                 >
                   <Power className="h-4 w-4" />
@@ -411,40 +379,7 @@ export function WalletConnection() {
             </>
           ) : (
             <div className="p-2">
-              {selectedChain === 'EVM' ? (
-                <Button
-                  className={cn(
-                    "w-full justify-center",
-                    "bg-gradient-to-r",
-                    selectedNetwork === polygon.id
-                      ? "from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
-                      : "from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600",
-                    "text-white font-medium",
-                    "shadow-lg",
-                    selectedNetwork === polygon.id
-                      ? "shadow-purple-500/20 hover:shadow-purple-500/30"
-                      : "shadow-violet-500/20 hover:shadow-violet-500/30",
-                    "hover:shadow-xl",
-                    "transition-all duration-200"
-                  )}
-                  onClick={handleEvmConnect}
-                >
-                  {getConnectButtonText()}
-                </Button>
-              ) : (
-                <div className={cn(
-                  "w-full",
-                  "[&>button]:w-full [&>button]:h-9",
-                  "[&>button]:bg-gradient-to-r [&>button]:from-orange-500 [&>button]:to-red-500",
-                  "[&>button]:hover:from-orange-600 [&>button]:hover:to-red-600",
-                  "[&>button]:rounded-lg [&>button]:font-medium",
-                  "[&>button]:shadow-lg [&>button]:shadow-orange-500/20",
-                  "[&>button]:hover:shadow-xl [&>button]:hover:shadow-orange-500/30",
-                  "[&>button]:transition-all [&>button]:duration-200"
-                )}>
-                  <WalletMultiButton />
-                </div>
-              )}
+              {renderWalletOptions()}
             </div>
           )}
         </DropdownMenuContent>
