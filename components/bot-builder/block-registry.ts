@@ -1,8 +1,8 @@
-import { BlockType, PriceTriggerBlock, TradeActionBlock, LogicBlock } from './types'
+import { BlockType } from './types'
 import { TOKEN_MINTS } from '@/lib/solana/constants';
 
 // Define available DCA pairs
-const DCA_PAIRS = [
+export const TOKEN_PAIRS = [
   {
     id: 'USDC-SOL',
     name: 'USDC/SOL',
@@ -77,6 +77,9 @@ const DCA_PAIRS = [
   }
 ];
 
+// // Get trading pair names for use in block configs
+// const TRADING_PAIRS = TOKEN_PAIRS.map(pair => pair.name);
+
 export const AVAILABLE_BLOCKS: BlockType[] = [
   {
     id: 'price-trigger',
@@ -88,12 +91,14 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
     config: {
       price: 0,
       condition: 'above',
-      pair: 'BTC/USD'
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       price: 0,
       condition: 'above',
-      pair: 'BTC/USD'
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       price: { min: 0, required: true },
@@ -116,17 +121,20 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       volume: 0,
       timeframe: '1h',
       condition: 'above',
-      pair: 'BTC/USD'
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       volume: 0,
       timeframe: '1h',
       condition: 'above',
-      pair: 'BTC/USD'
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       volume: { min: 0, required: true },
-      timeframe: { required: true }
+      timeframe: { required: true },
+      pair: { required: true }
     },
     allowedConnections: {
       outputs: ['action', 'condition']
@@ -171,17 +179,22 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       type: 'market',
       side: 'buy',
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'market',
       side: 'buy',
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       amount: { min: 0, required: true },
-      slippage: { min: 0, max: 100 }
+      slippage: { min: 0, max: 100 },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -200,18 +213,23 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       side: 'buy',
       amount: 0,
       limitPrice: 0,
-      expiry: '24h'
+      expiry: '24h',
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'limit',
       side: 'buy',
       amount: 0,
       limitPrice: 0,
-      expiry: '24h'
+      expiry: '24h',
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       amount: { min: 0, required: true },
-      limitPrice: { min: 0, required: true }
+      limitPrice: { min: 0, required: true },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -229,17 +247,22 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       type: 'stop',
       stopPrice: 0,
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'stop',
       stopPrice: 0,
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       stopPrice: { min: 0, required: true },
-      amount: { min: 0, required: true }
+      amount: { min: 0, required: true },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -326,17 +349,22 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       type: 'market',
       side: 'sell',
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'market',
       side: 'sell',
       amount: 0,
-      slippage: 1
+      slippage: 1,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       amount: { min: 0, required: true },
-      slippage: { min: 0, max: 100 }
+      slippage: { min: 0, max: 100 },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -355,18 +383,23 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       side: 'sell',
       amount: 0,
       limitPrice: 0,
-      expiry: '24h'
+      expiry: '24h',
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'limit',
       side: 'sell',
       amount: 0,
       limitPrice: 0,
-      expiry: '24h'
+      expiry: '24h',
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       amount: { min: 0, required: true },
-      limitPrice: { min: 0, required: true }
+      limitPrice: { min: 0, required: true },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -385,19 +418,24 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       side: 'sell',
       amount: 0,
       targetPrice: 0,
-      trailingPercent: 0
+      trailingPercent: 0,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
       type: 'limit',
       side: 'sell',
       amount: 0,
       targetPrice: 0,
-      trailingPercent: 0
+      trailingPercent: 0,
+      pair: TOKEN_PAIRS[0],
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
       amount: { min: 0, required: true },
       targetPrice: { min: 0, required: true },
-      trailingPercent: { min: 0, max: 100 }
+      trailingPercent: { min: 0, max: 100 },
+      pair: { required: true }
     },
     allowedConnections: {
       inputs: ['trigger', 'condition']
@@ -410,43 +448,47 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
     label: 'DCA Strategy',
     name: 'Dollar Cost Averaging',
     config: {
-      tradingPair: '',
-      inputAmount: 0,
+      applicationIdx: 0,
+      pair: TOKEN_PAIRS[0],
+      inAmount: 0,
+      inAmountPerCycle: 0,
       cycleFrequency: 3600,
       minOutAmount: 0,
       maxOutAmount: 0,
-      availablePairs: DCA_PAIRS
+      startAt: Date.now().toString(),
+      availablePairs: TOKEN_PAIRS
     },
     defaultConfig: {
-      tradingPair: '',
-      inputAmount: 0,
+      applicationIdx: 0,
+      pair: TOKEN_PAIRS[0],
+      inAmount: 0,
+      inAmountPerCycle: 0,
       cycleFrequency: 3600,
       minOutAmount: 0,
       maxOutAmount: 0,
-      availablePairs: DCA_PAIRS
+      startAt: Date.now().toString(),
+      availablePairs: TOKEN_PAIRS
     },
     validationRules: {
-      tradingPair: { required: true },
-      inputAmount: { required: true, min: 0 },
+      applicationIdx: { required: true, min: 0 },
+      pair: { required: true },
+      inAmount: { required: true, min: 0 },
+      inAmountPerCycle: { required: true, min: 0 },
       cycleFrequency: { required: true, min: 60 },
+      minOutAmount: { min: 0 },
+      maxOutAmount: { min: 0 },
+      startAt: { required: true }
     }
   }
 ]
 
-export function getBlockTemplate(type: string): BlockType | undefined {
-  return AVAILABLE_BLOCKS.find(block => block.id === type)
-}
-
-export function createBlock(type: string): BlockType | undefined {
-  const template = getBlockTemplate(type)
-  if (!template) return undefined
+export function createBlock(blockType: string): BlockType | null {
+  const template = AVAILABLE_BLOCKS.find(block => block.id === blockType)
+  if (!template) return null
 
   return {
     ...template,
     id: crypto.randomUUID(),
     config: { ...template.defaultConfig }
   }
-}
-
-// Export DCA pairs for use in other components
-export { DCA_PAIRS }; 
+} 

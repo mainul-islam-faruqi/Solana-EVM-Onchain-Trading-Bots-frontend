@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BlockType, BotStrategy, BlockPosition, Position } from './types'
-import { BlockConfigPanel } from './block-config-panel'
 import { ConnectionLine } from './connection-line'
 import { BlockLibrary } from './block-library'
 import { Block } from './block'
@@ -25,6 +24,8 @@ import { TokenSelector } from '@/components/bot-builder/token-selector';
 import { DCAConfig, ExecutionState } from './types';
 import { PublicKey } from '@solana/web3.js';
 import { AVAILABLE_PAIRS, TokenInfo } from '@/lib/constants/token-pairs';
+import { Zap, DollarSign, Blocks, Settings } from 'lucide-react';
+import { BlockConfigSummary } from './block-config-summary';
 
 export function BotBuilder() {
   const [strategy, setStrategy] = React.useState<BotStrategy>({
@@ -34,6 +35,8 @@ export function BotBuilder() {
     connections: []
   })
 
+  console.log(strategy)
+
   const [availableBlocks] = React.useState<BlockType[]>(AVAILABLE_BLOCKS)
 
   const [selectedBlock, setSelectedBlock] = React.useState<BlockType | null>(null)
@@ -41,6 +44,19 @@ export function BotBuilder() {
   const blockRefs = React.useRef<Map<string, HTMLDivElement>>(new Map())
 
   const [blockPositions, setBlockPositions] = React.useState<BlockPosition[]>([])
+
+  // Load positions from local storage on mount
+  React.useEffect(() => {
+    const savedPositions = localStorage.getItem('blockPositions')
+    if (savedPositions) {
+      setBlockPositions(JSON.parse(savedPositions))
+    }
+  }, [])
+
+  // Save positions to local storage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('blockPositions', JSON.stringify(blockPositions))
+  }, [blockPositions])
 
   const [previewConnection, setPreviewConnection] = React.useState<{
     start: Position;
@@ -178,22 +194,84 @@ export function BotBuilder() {
     const newBlock = createBlock(blockType)
     
     if (newBlock) {
-      const rect = e.currentTarget.getBoundingClientRect()
-      const position = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      }
+      const canvas = document.querySelector('.strategy-canvas')
+      if (!canvas) return
+
+      const canvasRect = canvas.getBoundingClientRect()
       
+      // Calculate initial position relative to canvas
+      const estimatedBlockWidth = 200
+      const estimatedBlockHeight = 150
+      const padding = 10
+
+      // Calculate raw position
+      let x = e.clientX - canvasRect.left
+      let y = e.clientY - canvasRect.top
+
+      // Apply canvas boundaries
+      const minX = padding
+      const maxX = canvasRect.width - estimatedBlockWidth - padding
+      const minY = padding
+      const maxY = canvasRect.height - estimatedBlockHeight - padding
+
+      // Clamp position within canvas
+      x = Math.max(minX, Math.min(maxX, x))
+      y = Math.max(minY, Math.min(maxY, y))
+
+      // Add the new block
       setStrategy(prev => ({
         ...prev,
         blocks: [...prev.blocks, newBlock]
       }))
-      
-      setBlockPositions(prev => [...prev, {
-        blockId: newBlock.id,
-        position
-      }])
+
+      // Set its position
+      setBlockPositions(prev => [
+        ...prev,
+        {
+          blockId: newBlock.id,
+          position: { x, y }
+        }
+      ])
+
+      // Select the new block
+      setSelectedBlock(newBlock)
     }
+  }
+
+  const handleBlockDrag = (blockId: string, x: number, y: number) => {
+    const canvas = document.querySelector('.strategy-canvas')
+    if (!canvas) return
+
+    const canvasRect = canvas.getBoundingClientRect()
+    const estimatedBlockWidth = 200
+    const estimatedBlockHeight = 150
+    const padding = 10
+
+    // Apply canvas boundaries
+    const minX = padding
+    const maxX = canvasRect.width - estimatedBlockWidth - padding
+    const minY = padding
+    const maxY = canvasRect.height - estimatedBlockHeight - padding
+
+    // Clamp position within canvas
+    x = Math.max(minX, Math.min(maxX, x))
+    y = Math.max(minY, Math.min(maxY, y))
+
+    // Update block position
+    setBlockPositions(prev => {
+      const newPositions = prev.map(pos => 
+        pos.blockId === blockId 
+          ? { ...pos, position: { x, y } }
+          : pos
+      )
+      
+      // If this block doesn't have a position yet, add it
+      if (!prev.some(pos => pos.blockId === blockId)) {
+        newPositions.push({ blockId, position: { x, y } })
+      }
+      
+      return newPositions
+    })
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -208,45 +286,43 @@ export function BotBuilder() {
     setStrategy(prev => ({
       ...prev,
       blocks: prev.blocks.map(block => 
-        block.id === blockId 
-          ? { ...block, config: newConfig }
-          : block
+        block.id === blockId ? { ...block, config: newConfig } : block
       )
-    }));
+    }))
 
-    // Update selected block if it's the one being modified
     if (selectedBlock?.id === blockId) {
-      setSelectedBlock(prev => 
-        prev ? { ...prev, config: newConfig } : null
-      );
+      setSelectedBlock(prev => prev ? { ...prev, config: newConfig } : null)
     }
-  };
+  }
+
+  const handleBlockRemove = (blockId: string) => {
+    // Remove the block
+    setStrategy(prev => ({
+      ...prev,
+      blocks: prev.blocks.filter(block => block.id !== blockId),
+      // Also remove any connections involving this block
+      connections: prev.connections.filter(
+        conn => conn.sourceId !== blockId && conn.targetId !== blockId
+      )
+    }))
+
+    // Remove block position
+    setBlockPositions(prev => prev.filter(bp => bp.blockId !== blockId))
+
+    // Clear block ref
+    blockRefs.current.delete(blockId)
+
+    // Deselect if this was the selected block
+    if (selectedBlock?.id === blockId) {
+      setSelectedBlock(null)
+    }
+  }
 
   const handleConnectionStart = (blockId: string) => {
     setConnecting({ sourceId: blockId })
   }
 
-  const handleConnectionEnd = (targetId: string) => {
-    if (connecting && connecting.sourceId !== targetId) {
-      const newConnection = {
-        id: crypto.randomUUID(),
-        sourceId: connecting.sourceId,
-        targetId
-      }
-
-      const updatedStrategy = {
-        ...strategy,
-        connections: [...strategy.connections, newConnection]
-      }
-
-      const result = validationService.validateStrategy(updatedStrategy)
-      
-      if (result.isValid) {
-        setStrategy(updatedStrategy)
-      } else {
-        setValidationErrors(result.errors)
-      }
-    }
+  const handleConnectionEnd = () => {
     setConnecting(null)
     setPreviewConnection(null)
   }
@@ -259,12 +335,6 @@ export function BotBuilder() {
     }
   }
 
-  const handleBlockPositionChange = (blockId: string, newPosition: Position) => {
-    setBlockPositions(prev => prev.map(bp => 
-      bp.blockId === blockId ? { ...bp, position: newPosition } : bp
-    ))
-  }
-
   const handleMouseMove = (e: React.MouseEvent) => {
     if (connecting) {
       const rect = e.currentTarget.getBoundingClientRect()
@@ -275,19 +345,6 @@ export function BotBuilder() {
           y: e.clientY - rect.top
         }
       })
-    }
-  }
-
-  const handleBlockConfigChange = (blockId: string, newConfig: Record<string, any>) => {
-    setStrategy(prev => ({
-      ...prev,
-      blocks: prev.blocks.map(block => 
-        block.id === blockId ? { ...block, config: newConfig } : block
-      )
-    }))
-
-    if (selectedBlock?.id === blockId) {
-      setSelectedBlock(prev => prev ? { ...prev, config: newConfig } : null)
     }
   }
 
@@ -431,7 +488,8 @@ export function BotBuilder() {
               <Card 
                 className={cn(
                   "border border-accent/20 bg-darker/50 backdrop-blur-sm",
-                  "relative transition-all duration-200"
+                  "relative transition-all duration-200",
+                  "strategy-canvas overflow-hidden"
                 )}
                 style={{ height: blockLibraryHeight ? `${blockLibraryHeight}px` : '600px' }}
                 onDrop={handleBlockDrop}
@@ -442,9 +500,21 @@ export function BotBuilder() {
                 <CardHeader className="border-b border-accent/20">
                   <CardTitle className="text-lg font-medium text-lightest">Strategy Canvas</CardTitle>
                 </CardHeader>
-                <CardContent className="relative p-0">
+                <CardContent className="relative h-full">
                   {/* Grid overlay */}
                   <div className="absolute inset-0 bg-gradient-to-b from-darker/5 via-darker/10 to-darker/20" />
+
+                  {/* Empty state */}
+                  {strategy.blocks.length === 0 && (
+                    <div className="absolute left-0 right-0 flex justify-center text-lightest z-10 mt-8">
+                      <div className="text-center">
+                        <div className="inline-block p-3 rounded-full bg-darker/50 mb-4">
+                          <AlertCircle className="w-6 h-6 text-lighter" />
+                        </div>
+                        <p className="text-sm text-lighter">Drag blocks from the library to start building your strategy</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Connections */}
                   <svg className="absolute inset-0 pointer-events-none">
@@ -454,7 +524,7 @@ export function BotBuilder() {
                       if (sourceEl && targetEl) {
                         return (
                           <ConnectionLine
-                            key={connection.id}
+                            key={`${connection.sourceId}-${connection.targetId}`}
                             start={getBlockCenter(sourceEl)}
                             end={getBlockCenter(targetEl)}
                           />
@@ -474,47 +544,23 @@ export function BotBuilder() {
                   
                   {/* Blocks */}
                   {strategy.blocks.map(block => {
-                    const position = blockPositions.find(bp => bp.blockId === block.id)?.position
-                    return position && (
-                      <div
+                    const position = blockPositions.find(pos => pos.blockId === block.id)?.position || { x: 0, y: 0 }
+                    
+                    return (
+                      <Block
                         key={block.id}
-                        style={{
-                          position: 'absolute',
-                          left: position.x,
-                          top: position.y,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                        ref={(el: HTMLDivElement | null) => {
-                          if (el) blockRefs.current.set(block.id, el)
-                        }}
-                      >
-                        <Block
-                          block={block}
-                          position={position}
-                          selected={selectedBlock?.id === block.id}
-                          onClick={() => handleBlockClick(block)}
-                          onConnectionStart={() => handleConnectionStart(block.id)}
-                          onConnectionEnd={() => handleConnectionEnd(block.id)}
-                          onPositionChange={(newPosition) => 
-                            handleBlockPositionChange(block.id, newPosition)
-                          }
-                          onConfigChange={handleConfigChange}
-                        />
-                      </div>
+                        block={block}
+                        selected={selectedBlock?.id === block.id}
+                        position={position}
+                        onClick={() => handleBlockClick(block)}
+                        onConnectionStart={() => handleConnectionStart(block.id)}
+                        onConnectionEnd={handleConnectionEnd}
+                        onPositionChange={(newPos) => handleBlockDrag(block.id, newPos.x, newPos.y)}
+                        onConfigChange={handleConfigChange}
+                        onRemove={handleBlockRemove}
+                      />
                     )
                   })}
-
-                  {/* Empty state */}
-                  {strategy.blocks.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-lightest">
-                      <div className="text-center">
-                        <div className="inline-block p-3 rounded-full bg-darker/50 mb-4">
-                          <AlertCircle className="w-6 h-6 text-lighter" />
-                        </div>
-                        <p className="text-sm text-lighter">Drag blocks from the library to start building your strategy</p>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -537,39 +583,9 @@ export function BotBuilder() {
 
           {/* Configuration and Execution */}
           <div className="grid grid-cols-2 gap-6">
-            {/* Configuration Panel */}
+            {/* Config Summary Panel */}
             <div className="col-span-1">
-              {selectedBlock ? (
-                <div className="space-y-6">
-                  {/* Add Token Selector if block type is 'action' */}
-                  {selectedBlock.type === 'action' && (
-                    <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm">
-                      <CardHeader className="border-b border-accent/20">
-                        <CardTitle className="text-lightest">Select Token</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-6">
-                        <TokenSelector
-                          onSelect={handleTokenSelect}
-                          selectedToken={selectedToken}
-                          label="Select token to trade"
-                        />
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {/* Existing Block Config Panel */}
-                  <BlockConfigPanel
-                    selectedBlock={selectedBlock}
-                    onConfigChange={handleConfigChange}
-                  />
-                </div>
-              ) : (
-                <Card className="border-accent/20 bg-darker/50 backdrop-blur-sm h-full">
-                  <CardContent className="flex items-center justify-center min-h-[300px] text-lightest">
-                    <p className="text-sm">Select a block to configure</p>
-                  </CardContent>
-                </Card>
-              )}
+              <BlockConfigSummary selectedBlock={selectedBlock} />
             </div>
 
             {/* Execution Panel */}

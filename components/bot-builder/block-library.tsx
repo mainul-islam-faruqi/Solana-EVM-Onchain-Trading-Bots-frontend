@@ -4,7 +4,6 @@ import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BlockType } from './types'
 import { Blocks, Zap, DollarSign } from 'lucide-react'
-import { COLORS } from '@/lib/constants/colors'
 
 interface BlockLibraryProps {
   blocks: BlockType[];
