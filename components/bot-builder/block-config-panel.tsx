@@ -268,9 +268,10 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
       if (key === 'startAt') {
         const timestamp = typeof value === 'string' ? parseInt(value) : Date.now();
         const date = new Date(timestamp);
-
+        console.log('value', value, timestamp)
         const handleDateChange = (newDate: Date | null) => {
           if (newDate) {
+            console.log('newDate',  newDate ,  newDate.getTime().toString() )
             handleConfigChange(key, newDate.getTime().toString());
           } else {
             handleConfigChange(key, Date.now().toString());

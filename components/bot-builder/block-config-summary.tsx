@@ -71,7 +71,7 @@ export function BlockConfigSummary({ selectedBlock }: BlockConfigSummaryProps) {
 
                 // Handle other values
                 if (key === 'startAt' && value) {
-                  if (typeof value !== 'string' && typeof value !== 'number') return 'Not set';
+                  if (typeof value !== 'string' && typeof value !== 'number') return null;
                   const timestamp = typeof value === 'string' ? parseInt(value) : value;
                   const date = new Date(timestamp);
                   const formattedDate = format(date, "MMMM d, yyyy 'at' h:mm aa");

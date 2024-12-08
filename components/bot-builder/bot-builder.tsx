@@ -35,7 +35,6 @@ export function BotBuilder() {
     connections: []
   })
 
-  console.log(strategy)
 
   const [availableBlocks] = React.useState<BlockType[]>(AVAILABLE_BLOCKS)
 
@@ -283,17 +282,24 @@ export function BotBuilder() {
   }
 
   const handleConfigChange = (blockId: string, newConfig: Record<string, unknown>) => {
+    // Update strategy blocks only
     setStrategy(prev => ({
       ...prev,
       blocks: prev.blocks.map(block => 
         block.id === blockId ? { ...block, config: newConfig } : block
       )
-    }))
-
-    if (selectedBlock?.id === blockId) {
-      setSelectedBlock(prev => prev ? { ...prev, config: newConfig } : null)
-    }
+    }));
   }
+
+  // Sync selectedBlock with strategy updates
+  React.useEffect(() => {
+    if (selectedBlock) {
+      const updatedBlock = strategy.blocks.find(block => block.id === selectedBlock.id);
+      if (updatedBlock && JSON.stringify(updatedBlock.config) !== JSON.stringify(selectedBlock.config)) {
+        setSelectedBlock(updatedBlock);
+      }
+    }
+  }, [strategy.blocks, selectedBlock]);
 
   const handleBlockRemove = (blockId: string) => {
     // Remove the block
@@ -327,24 +333,28 @@ export function BotBuilder() {
     setPreviewConnection(null)
   }
 
-  const getBlockCenter = (element: HTMLDivElement) => {
-    const rect = element.getBoundingClientRect()
+  const getBlockCenter = (element: HTMLDivElement | undefined) => {
+    if (!element) return { x: 0, y: 0 };
+    const rect = element.getBoundingClientRect();
     return {
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2
-    }
+    };
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (connecting) {
-      const rect = e.currentTarget.getBoundingClientRect()
+      const sourceElement = blockRefs.current.get(connecting.sourceId);
+      if (!sourceElement) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
       setPreviewConnection({
-        start: getBlockCenter(blockRefs.current.get(connecting.sourceId)!),
+        start: getBlockCenter(sourceElement),
         end: {
           x: e.clientX - rect.left,
           y: e.clientY - rect.top
         }
-      })
+      });
     }
   }
 
