@@ -6,13 +6,11 @@ import { BlockType, BotStrategy, BlockPosition, Position } from './types'
 import { ConnectionLine } from './connection-line'
 import { BlockLibrary } from './block-library'
 import { Block } from './block'
-import { ValidationService } from '@/lib/strategy/validation-service'
 import { ValidationError } from './types'
 import { ExecutionPanel } from './execution/execution-panel'
 import { AlertCircle } from 'lucide-react'
 import { AVAILABLE_BLOCKS, createBlock } from './block-registry'
 import { StrategyTester } from './testing/strategy-tester'
-import { StrategyTemplate } from '@/types/templates'
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useStrategyTemplate } from '@/hooks/useStrategyTemplate';
@@ -20,11 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PriceMonitoringPanel } from './price-monitoring/price-panel';
 import { AssetManagement } from '@/components/wallet/asset-management';
-import { TokenSelector } from '@/components/bot-builder/token-selector';
-import { DCAConfig, ExecutionState } from './types';
-import { PublicKey } from '@solana/web3.js';
-import { AVAILABLE_PAIRS, TokenInfo } from '@/lib/constants/token-pairs';
-import { Zap, DollarSign, Blocks, Settings } from 'lucide-react';
+import { ExecutionState } from './types';
 import { BlockConfigSummary } from './block-config-summary';
 
 export function BotBuilder() {
@@ -63,7 +57,6 @@ export function BotBuilder() {
   } | null>(null)
 
   const [validationErrors, setValidationErrors] = React.useState<ValidationError[]>([])
-  const validationService = React.useMemo(() => new ValidationService(), [])
 
   const { loadTemplate, isLoading: isTemplateLoading } = useStrategyTemplate();
   const searchParams = useSearchParams();
@@ -74,20 +67,6 @@ export function BotBuilder() {
 
   const blockLibraryRef = React.useRef<HTMLDivElement>(null);
   const [blockLibraryHeight, setBlockLibraryHeight] = React.useState<number>(0);
-
-  const [selectedToken, setSelectedToken] = React.useState<string | null>(null);
-
-  const [dcaConfig, setDcaConfig] = React.useState<DCAConfig>({
-    applicationIdx: 0,
-    inAmount: 0,
-    inAmountPerCycle: 0,
-    cycleFrequency: 3600, // 1 hour default
-    minOutAmount: undefined,
-    maxOutAmount: undefined,
-    startAt: undefined,
-    inputMint: '',   // Add inputMint
-    outputMint: ''   // Add outputMint
-  });
 
   // Update block library height on mount and resize
   React.useEffect(() => {
@@ -176,12 +155,6 @@ export function BotBuilder() {
       variant: "success",
     });
   };
-
-  const validateStrategy = React.useCallback(() => {
-    const result = validationService.validateStrategy(strategy)
-    setValidationErrors(result.errors)
-    return result.isValid
-  }, [strategy, validationService])
 
   const handleDragStart = (e: React.DragEvent, block: BlockType) => {
     e.dataTransfer.setData('blockType', block.id)
@@ -358,47 +331,11 @@ export function BotBuilder() {
     }
   }
 
-  const handleStartExecution = async () => {
-    const validationResult = validationService.validateStrategy(strategy);
-    if (!validationResult.isValid) {
-      setValidationErrors(validationResult.errors);
-      return;
-    }
-    
-    // Continue with execution
-  };
-
-  const handleTemplateSelect = (template: StrategyTemplate) => {
-    // Load template strategy
-    setStrategy(template.strategy);
-    
-    // Calculate block positions
-    const newPositions: BlockPosition[] = template.strategy.blocks.map((block, index) => ({
-      blockId: block.id,
-      position: {
-        x: 200 + (index % 2) * 300, // Arrange blocks in a grid
-        y: 150 + Math.floor(index / 2) * 200
-      }
-    }));
-    
-    setBlockPositions(newPositions);
-    
-    // Reset selected block
-    setSelectedBlock(null);
-  };
-
-  const handleTokenSelect = (inputToken: TokenInfo, outputToken: TokenInfo) => {
-    setDcaConfig(prev => ({
-      ...prev,
-      inputMint: inputToken.mint.toString(),
-      outputMint: outputToken.mint.toString()
-    }));
-  };
-
   const handleExecutionStateChange = (state: ExecutionState) => {
     setExecutionStatus(state.status as 'error' | 'idle' | 'running' | 'paused');
-    if (state.errors.length > 0) {
+    if (state.errors && state.errors.length > 0) {
       setValidationErrors(state.errors.map(error => ({
+        blockId: 'global',
         type: 'general',
         message: error
       })));
@@ -603,7 +540,6 @@ export function BotBuilder() {
               <ExecutionPanel 
                 strategy={strategy}
                 onExecutionStateChange={handleExecutionStateChange}
-                dcaConfig={dcaConfig} // Pass the DCAConfig as a prop
               />
             </div>
           </div>
@@ -613,8 +549,8 @@ export function BotBuilder() {
             {/* Price Monitoring */}
             <div>
               <PriceMonitoringPanel 
-                tokenAddress={selectedToken?.address || "0x..."} // Use selected token
-                chainId={selectedToken?.chainId || 1}
+                tokenAddress={(strategy.blocks.find(b => b.type === 'dca')?.config as { pair: { inputToken: { mint: { toString: () => string } } } })?.pair?.inputToken?.mint?.toString() || "0x..."}
+                chainId={1}
               />
             </div>
 
@@ -622,7 +558,7 @@ export function BotBuilder() {
             <div>
               <StrategyTester 
                 strategy={strategy}
-                selectedToken={selectedToken} // Pass selected token to tester
+                selectedToken={(strategy.blocks.find(block => block.id === 'inputMint')?.config?.address as string) || null}
               />
             </div>
           </div>

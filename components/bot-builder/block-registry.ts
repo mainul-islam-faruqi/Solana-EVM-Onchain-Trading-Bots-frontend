@@ -470,7 +470,6 @@ export const AVAILABLE_BLOCKS: BlockType[] = [
       availablePairs: TOKEN_PAIRS
     },
     validationRules: {
-      applicationIdx: { required: true, min: 0 },
       pair: { required: true },
       inAmount: { required: true, min: 0 },
       inAmountPerCycle: { required: true, min: 0 },

@@ -164,7 +164,7 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
   };
 
   const renderField = (key: string, value: unknown) => {
-    if (key === 'availablePairs') return null;
+    if (key === 'availablePairs' || key === 'applicationIdx') return null;
 
     if (key === 'pair' || key === 'tradingPair') {
       return renderPairSelector();
@@ -268,10 +268,8 @@ export function BlockConfigPanel({ selectedBlock, onConfigChange }: BlockConfigP
       if (key === 'startAt') {
         const timestamp = typeof value === 'string' ? parseInt(value) : Date.now();
         const date = new Date(timestamp);
-        console.log('value', value, timestamp)
         const handleDateChange = (newDate: Date | null) => {
           if (newDate) {
-            console.log('newDate',  newDate ,  newDate.getTime().toString() )
             handleConfigChange(key, newDate.getTime().toString());
           } else {
             handleConfigChange(key, Date.now().toString());

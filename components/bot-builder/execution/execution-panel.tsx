@@ -14,26 +14,94 @@ import {
   Activity
 } from 'lucide-react'
 import { ExecutionEngine } from './execution-engine'
-import { BotStrategy, DCAConfig, ExecutionState } from './types'
+import { ExecutionState } from './types'
+import { BotStrategy } from '../types'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { Program, AnchorProvider, web3 } from '@coral-xyz/anchor'
-import { IDL, TradingBotIDL } from '@/lib/solana/idl/trading_bot'
-import { PROGRAM_ID } from '@/lib/solana/program'
-import { getAssociatedTokenAddress, getEscrowPDA } from '@/lib/solana/utils'
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { Wallet as SolanaWallet } from '@coral-xyz/anchor'
+import { DCAService } from '@/lib/services/dca-service'
 
-// Update the program type
-type TradingBotProgram = Program<TradingBotIDL>;
+interface MetricsCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  subValue?: React.ReactNode;
+}
+
+const MetricsCard = ({ icon, label, value, subValue }: MetricsCardProps) => (
+  <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
+    <div className="flex items-center gap-2 mb-2">
+      {icon}
+      <span className="text-sm font-medium text-lighter">{label}</span>
+    </div>
+    <span className="text-lg font-bold text-lighter">
+      {value}
+      {subValue && <span className="text-sm text-lighter/50 ml-2">{subValue}</span>}
+    </span>
+  </div>
+);
+
+interface StatusBadgeProps {
+  status: string;
+}
+
+const StatusBadge = ({ status }: StatusBadgeProps) => (
+  <span className={`text-sm font-semibold px-3 py-1 rounded-full
+    ${status === 'running' ? 'bg-success/10 text-success' : ''}
+    ${status === 'paused' ? 'bg-warning/10 text-warning' : ''}
+    ${status === 'error' ? 'bg-error/10 text-error' : ''}
+    ${status === 'idle' ? 'bg-accent/10 text-light' : ''}
+  `}>
+    {status.toUpperCase() || 'INITIALIZING'}
+  </span>
+);
+
+interface ControlButtonsProps {
+  onStart: () => void;
+  onPause: () => void;
+  onStop: () => void;
+  status: string;
+}
+
+const ControlButtons = ({ onStart, onPause, onStop, status }: ControlButtonsProps) => (
+  <div className="flex items-center space-x-2">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onStart}
+      disabled={status === 'running'}
+      className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
+    >
+      <PlayCircle className="h-5 w-5" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onPause}
+      disabled={status !== 'running'}
+      className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
+    >
+      <PauseCircle className="h-5 w-5" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onStop}
+      disabled={status === 'idle'}
+      className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
+    >
+      <StopCircle className="h-5 w-5" />
+    </Button>
+  </div>
+);
 
 interface ExecutionPanelProps {
   strategy: BotStrategy;
   onExecutionStateChange?: (state: ExecutionState) => void;
-  dcaConfig: DCAConfig;
 }
 
-export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: ExecutionPanelProps) {
+export function ExecutionPanel({ strategy, onExecutionStateChange }: ExecutionPanelProps) {
   const { toast } = useToast();
   const { connection } = useConnection();
   const wallet = useWallet();
@@ -54,32 +122,27 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
   React.useEffect(() => {
     const newEngine = new ExecutionEngine(strategy)
     setEngine(newEngine)
-
-    return () => {
-      if (newEngine) {
-        newEngine.stop()
-      }
-    }
+    return () => { newEngine?.stop() }
   }, [strategy])
 
-  // Update metrics periodically
   React.useEffect(() => {
     if (!engine || executionState?.status !== 'running') return
-
     const interval = setInterval(() => {
-      const currentMetrics = engine.getMetrics()
-      setMetrics(currentMetrics)
+      setMetrics(engine.getMetrics())
     }, 5000)
-
     return () => clearInterval(interval)
   }, [engine, executionState?.status])
 
+  const updateExecutionState = (newState: ExecutionState) => {
+    setExecutionState(newState);
+    onExecutionStateChange?.(newState);
+  };
+
   const handleStart = async () => {
     if (!engine) return;
-
     try {
       await engine.start();
-      setExecutionState(engine.getExecutionState());
+      updateExecutionState(engine.getExecutionState());
       toast({
         title: "Bot Started",
         description: "Strategy execution has begun",
@@ -96,242 +159,151 @@ export function ExecutionPanel({ strategy, onExecutionStateChange, dcaConfig }: 
 
   const handlePause = async () => {
     if (engine) {
-      await engine.pause()
-      setExecutionState(engine.getExecutionState())
+      await engine.pause();
+      updateExecutionState(engine.getExecutionState());
     }
-  }
+  };
 
   const handleStop = async () => {
     if (engine) {
-      await engine.stop()
-      setExecutionState(engine.getExecutionState())
+      await engine.stop();
+      updateExecutionState(engine.getExecutionState());
     }
-  }
+  };
 
-  const handleExecuteDCA = async () => {
+  const handleStartDCA = async () => {
+    if (!wallet.connected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to continue",
+        variant: "error"
+      });
+      return;
+    }
+
     try {
-      if (!wallet.publicKey) throw new Error("Wallet not connected");
-      if (!dcaConfig.inputMint || !dcaConfig.outputMint) {
-        throw new Error("Please select input and output tokens");
-      }
+      const dcaBlock = strategy.blocks.find(b => b.type === 'dca');
+      if (!dcaBlock) throw new Error('No DCA configuration found in strategy');
 
-      // Get escrow PDA first
-      const [escrowPDA] = await getEscrowPDA(
-        wallet.publicKey,
-        new web3.PublicKey(dcaConfig.inputMint),
-        new web3.PublicKey(dcaConfig.outputMint),
-        dcaConfig.applicationIdx
-      );
+      const dcaConfig = {
+        applicationIdx: Number(dcaBlock.config.applicationIdx || 0),
+        inAmount: Number(dcaBlock.config.inAmount || 0),
+        inAmountPerCycle: Number(dcaBlock.config.inAmountPerCycle || 0),
+        cycleFrequency: Number(dcaBlock.config.cycleFrequency || 3600),
+        minOutAmount: Number(dcaBlock.config.minOutAmount),
+        maxOutAmount: Number(dcaBlock.config.maxOutAmount),
+        startAt: Number(dcaBlock.config.startAt),
+        inputMint: (dcaBlock.config as { pair: { inputToken: { mint: { toString: () => string } } } }).pair.inputToken.mint.toString() || '',
+        outputMint: (dcaBlock.config as { pair: { outputToken: { mint: { toString: () => string } } } }).pair.outputToken.mint.toString() || ''
+      };
 
-      // Create provider with proper wallet adapter type
-      const provider = new AnchorProvider(
-        connection,
-        {
-          publicKey: wallet.publicKey,
-          signTransaction: wallet.signTransaction!,
-          signAllTransactions: wallet.signAllTransactions!,
-        },
-        AnchorProvider.defaultOptions()
-      );
+      const dcaService = new DCAService(connection, wallet as unknown as SolanaWallet);
+      const result = await dcaService.setupDCA(dcaConfig);
 
-      // Initialize program with proper IDL type
-      const program = new Program(IDL, PROGRAM_ID, provider) as unknown as TradingBotProgram;
-
-      const tx = await program.methods
-        .setupDca(
-          dcaConfig.applicationIdx,
-          dcaConfig.inAmount,
-          dcaConfig.inAmountPerCycle,
-          dcaConfig.cycleFrequency,
-          dcaConfig.minOutAmount,
-          dcaConfig.maxOutAmount,
-          dcaConfig.startAt
-        )
-        .accounts({
-          jupDcaProgram: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
-          jupDca: new web3.PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
-          inputMint: new web3.PublicKey(dcaConfig.inputMint),
-          outputMint: new web3.PublicKey(dcaConfig.outputMint),
-          user: wallet.publicKey,
-          userTokenAccount: await getAssociatedTokenAddress(
-            new web3.PublicKey(dcaConfig.inputMint),
-            wallet.publicKey
-          ),
-          escrow: escrowPDA,
-          escrowInAta: await getAssociatedTokenAddress(
-            new web3.PublicKey(dcaConfig.inputMint),
-            escrowPDA
-          ),
-          escrowOutAta: await getAssociatedTokenAddress(
-            new web3.PublicKey(dcaConfig.outputMint),
-            escrowPDA
-          ),
-          systemProgram: web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        })
-        .rpc();
-
-      if (onExecutionStateChange) {
-        onExecutionStateChange({
-          status: 'success',
-          lastUpdate: new Date(),
-          errors: []
-        });
-      }
-
-      setExecutionState({
-        status: 'success',
-        lastUpdate: new Date(),
+      updateExecutionState({
+        status: 'running',
+        lastUpdate: Date.now(),
         errors: []
       });
 
       toast({
         title: "DCA Setup Successful",
-        description: `Transaction ID: ${tx}`,
-        variant: "success",
+        description: `Transaction signature: ${result.signature}`,
+        variant: "success"
       });
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       
-      setExecutionState({
+      updateExecutionState({
         status: 'error',
-        lastUpdate: new Date(),
+        lastUpdate: Date.now(),
         errors: [errorMessage]
       });
 
       toast({
         title: "DCA Setup Failed",
         description: errorMessage,
-        variant: "error",
+        variant: "error"
       });
     }
   };
-
+console.log(wallet)
   return (
     <Card className="border border-accent/20 bg-darker/50 backdrop-blur-sm">
       <CardHeader className="border-b border-accent/20">
         <CardTitle className="flex items-center justify-between">
           <span className="text-lightest">Bot Execution</span>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleStart}
-              disabled={executionState?.status === 'running'}
-              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
-            >
-              <PlayCircle className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePause}
-              disabled={executionState?.status !== 'running'}
-              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
-            >
-              <PauseCircle className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleStop}
-              disabled={executionState?.status === 'idle'}
-              className="hover:bg-accent/10 text-lighter disabled:text-lighter/50"
-            >
-              <StopCircle className="h-5 w-5" />
-            </Button>
-          </div>
+          <ControlButtons
+            onStart={handleStart}
+            onPause={handlePause}
+            onStop={handleStop}
+            status={executionState.status}
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 p-6">
         {/* Status */}
         <div className="flex items-center justify-between bg-darker/80 p-3 rounded-lg border border-accent/10">
           <span className="text-sm font-medium text-lighter">Status</span>
-          <span className={`text-sm font-semibold px-3 py-1 rounded-full
-            ${executionState?.status === 'running' ? 'bg-success/10 text-success' : ''}
-            ${executionState?.status === 'paused' ? 'bg-warning/10 text-warning' : ''}
-            ${executionState?.status === 'error' ? 'bg-error/10 text-error' : ''}
-            ${executionState?.status === 'idle' ? 'bg-accent/10 text-light' : ''}
-          `}>
-            {executionState?.status?.toUpperCase() || 'INITIALIZING'}
-          </span>
+          <StatusBadge status={executionState.status} />
         </div>
 
         {/* Performance Metrics */}
         <div className="grid grid-cols-2 gap-4">
-          {/* P&L */}
-          <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-lighter" />
-              <span className="text-sm font-medium text-lighter">P&L</span>
-            </div>
-            <span className={`text-lg font-bold ${metrics.profitLoss >= 0 ? 'text-success' : 'text-error'}`}>
+          <MetricsCard
+            icon={<TrendingUp className="h-4 w-4 text-lighter" />}
+            label="P&L"
+            value={<span className={metrics.profitLoss >= 0 ? 'text-success' : 'text-error'}>
               {formatCurrency(metrics.profitLoss)}
-            </span>
-          </div>
-
-          {/* Trade Count */}
-          <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4 text-lighter" />
-              <span className="text-sm font-medium text-lighter">Trades</span>
-            </div>
-            <span className="text-lg font-bold text-lighter">
-              {metrics.totalTrades}
-              <span className="text-sm text-lighter/50 ml-2">
-                ({formatNumber(metrics.successRate)}% success)
-              </span>
-            </span>
-          </div>
-
-          {/* Gas Used */}
-          <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-4 w-4 text-lighter" />
-              <span className="text-sm font-medium text-lighter">Gas Used</span>
-            </div>
-            <span className="text-lg font-bold text-lighter">
-              {formatNumber(metrics.gasUsed)} ETH
-            </span>
-          </div>
-
-          {/* Last Trade */}
-          <div className="bg-darker/80 p-4 rounded-lg border border-accent/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-lighter" />
-              <span className="text-sm font-medium text-lighter">Last Trade</span>
-            </div>
-            <span className="text-lg font-bold text-lighter">
-              {metrics.lastTradeTime ? new Date(metrics.lastTradeTime).toLocaleTimeString() : 'N/A'}
-            </span>
-          </div>
+            </span>}
+          />
+          <MetricsCard
+            icon={<Activity className="h-4 w-4 text-lighter" />}
+            label="Trades"
+            value={metrics.totalTrades}
+            subValue={`(${formatNumber(metrics.successRate)}% success)`}
+          />
+          <MetricsCard
+            icon={<Wallet className="h-4 w-4 text-lighter" />}
+            label="Gas Used"
+            value={`${formatNumber(metrics.gasUsed)} SOL`}
+          />
+          <MetricsCard
+            icon={<Clock className="h-4 w-4 text-lighter" />}
+            label="Last Trade"
+            value={metrics.lastTradeTime ? new Date(metrics.lastTradeTime).toLocaleTimeString() : 'N/A'}
+          />
         </div>
 
-        {/* Error Display */}
-        {executionState?.status === 'error' && executionState.error && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-error/10 border border-error/20">
-            <AlertCircle className="h-5 w-5 text-error" />
-            <span className="text-sm text-error">{executionState.error}</span>
+        {/* Bot Controls */}
+        {strategy.blocks.find(b => b.type === 'dca') ? (
+          <Button 
+            onClick={handleStartDCA}
+            disabled={executionState?.status === 'running' || !wallet.connected}
+            className="w-full"
+          >
+            {wallet.connected ? 'Start DCA' : 'Connect Wallet to Start DCA'}
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleStart}
+            disabled={executionState?.status === 'running'}
+            className="w-full"
+          >
+            Start Bot
+          </Button>
+        )}
+
+        {/* Status Messages */}
+        {executionState?.status === 'running' && (
+          <div className="text-sm text-lighter">
+            {strategy.blocks.find(b => b.type === 'dca') 
+              ? 'DCA strategy is active and running on-chain...'
+              : 'Bot is actively executing trades...'}
           </div>
         )}
 
-        {/* Add DCA configuration inputs */}
-        <Button 
-          onClick={handleExecuteDCA}
-          disabled={executionState?.status === 'running' || !wallet.connected}
-          className="w-full"
-        >
-          {wallet.connected ? 'Start DCA' : 'Connect Wallet to Start DCA'}
-        </Button>
-
-        {/* Status display */}
-        {executionState?.status === 'running' && (
-          <div className="text-sm text-lighter">Executing DCA strategy...</div>
-        )}
-
-        {/* Error display */}
+        {/* Error Messages */}
         {executionState?.errors.length > 0 && (
           <div className="text-error space-y-1">
             {executionState.errors.map((error: string, i: number) => (
